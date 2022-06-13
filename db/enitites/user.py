@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Integer
 from db.enitites.base_class import Base
 
 
-class User(Base):
+class User(Base, object):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -12,4 +12,3 @@ class User(Base):
     country = Column(String)
     city = Column(String)
     password = Column(String)
-    jwt = Column(String)
