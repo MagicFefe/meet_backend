@@ -5,6 +5,8 @@ from models.user.user_register import UserRegister
 from db.enitites.user import User
 from models.user.user_response import UserResponse
 from sqlalchemy.future import select
+from utils.password_utils import get_hashed_password
+from utils.jwt_utils import generate_jwt
 
 
 class UserRepository:
@@ -40,18 +42,24 @@ def from_user_register_to_user(user_register: UserRegister) -> User:
     user.email = user_register.email
     user.city = user_register.city
     user.country = user_register.country
-    user.password = user_register.password
+    user.password = get_hashed_password(user_register.password)
     return user
 
 
 def from_user_to_user_response(user: User):
-    # TODO: add jwt token generation
+    jwt = generate_jwt(
+        {
+            "name": user.name,
+            "surname": user.surname,
+            "email": user.email
+        }
+    )
     user_response = UserResponse(
         name=user.name,
         surname=user.surname,
         email=user.email,
         country=user.country,
         city=user.city,
-        jwt=""
+        jwt=jwt.__str__()
     )
     return user_response
