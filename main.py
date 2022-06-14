@@ -2,10 +2,16 @@ from fastapi import FastAPI
 from db.database import Database
 from dependencies import get_session
 from endpoints import user
+from starlette.middleware import Middleware
+from middleware.authorization_middleware import AuthorizationMiddleware
 
-app = FastAPI()
-app.include_router(user.router)
 db = Database()
+app = FastAPI(
+    middleware=[
+        Middleware(AuthorizationMiddleware)
+    ]
+)
+app.include_router(user.router)
 
 
 @app.on_event("startup")
