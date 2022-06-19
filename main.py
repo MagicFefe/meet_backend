@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from aioredis import from_url
+from config import REDIS_DB_URL
 from db.database import Database
 from dependencies import get_session
 from endpoints import user
@@ -6,6 +8,7 @@ from starlette.middleware import Middleware
 from middleware.authorization_middleware import AuthorizationMiddleware
 
 db = Database()
+redis_db = from_url(REDIS_DB_URL)
 app = FastAPI(
     middleware=[
         Middleware(AuthorizationMiddleware)

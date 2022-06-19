@@ -1,11 +1,12 @@
 from http import HTTPStatus
-from fastapi import Depends, APIRouter, Path, HTTPException
+from fastapi import Depends, Path, HTTPException, APIRouter
 from models.user.user_register import UserRegister
 from models.user.user_response import UserResponse
 from repositories.user_repository import UserRepository, from_user_to_user_response
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies import get_session, get_user_repository
 from exceptions import UserAlreadyExistsError
+from uuid import UUID
 
 router = APIRouter()
 
@@ -45,7 +46,7 @@ async def create_user(
 
 
 @router.get(
-    path="/api/user/{user_email}",
+    path="/api/user/{user_id}",
     status_code=200,
     response_model=UserResponse,
     responses={
@@ -68,12 +69,12 @@ async def create_user(
     }
 )
 async def get_user(
-        user_email: str = Path("User's email"),
+        user_id: str = Path("User's id"),
         session: AsyncSession = Depends(get_session),
         user_repository: UserRepository = Depends(get_user_repository)
 ):
     async with session.begin():
-        user = await user_repository.get_user_by_email(session, user_email)
+        user = await user_repository.get_user_by_id(session, UUID(user_id))
     if user is None:
         raise HTTPException(status_code=404, detail="user with this email does not exists")
     response = from_user_to_user_response(user)
@@ -81,7 +82,7 @@ async def get_user(
 
 
 @router.delete(
-    path="/api/user/{user_email}",
+    path="/api/user/{user_id}",
     status_code=200,
     response_model=int,
     responses={
@@ -96,10 +97,10 @@ async def get_user(
     }
 )
 async def delete_user(
-        user_email: str = Path("User's email"),
+        user_id: str = Path("User's id"),
         session: AsyncSession = Depends(get_session),
         repository: UserRepository = Depends(get_user_repository)
 ):
     async with session.begin():
-        await repository.delete_user(session, user_email)
+        await repository.delete_user(session, UUID(user_id))
     return HTTPStatus.OK

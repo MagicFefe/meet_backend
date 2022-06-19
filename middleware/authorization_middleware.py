@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from repositories.user_repository import UserRepository
 from fastapi.responses import JSONResponse
 
-excluded_requests: dict[str, list] = {
-    "/api/user": ["POST", "GET"],
+EXCLUDED_REQUESTS: dict[str, list] = {
+    "/": ["POST", "GET"],
     "/docs": ["GET"],
     "/openapi.json": ["GET"]
 }
@@ -20,19 +20,20 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app,
-            session=Depends(get_session),
+            session: AsyncSession = Depends(get_session),
             repository: UserRepository = Depends(get_user_repository)
     ):
         super().__init__(app)
         self.session: AsyncSession = session
-        self.repository = repository
+        self.repository: UserRepository = repository
 
     async def dispatch(self, request, call_next):
-        for excluded_request_path in excluded_requests:
-            excluded_request_methods = excluded_requests[excluded_request_path]
-            if request.method in excluded_request_methods and excluded_request_path in request.scope["path"]:
-                response = await call_next(request)
-                return response
+        if EXCLUDED_REQUESTS is not None:
+            for excluded_request_path in EXCLUDED_REQUESTS:
+                excluded_request_methods = EXCLUDED_REQUESTS[excluded_request_path]
+                if request.method in excluded_request_methods and excluded_request_path in request.scope["path"]:
+                    response = await call_next(request)
+                    return response
         try:
             token = request.headers["Authorization"]
         except KeyError:
