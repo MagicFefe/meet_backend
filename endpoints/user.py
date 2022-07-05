@@ -8,11 +8,14 @@ from dependencies import get_session, get_user_repository
 from exceptions import UserAlreadyExistsError
 from uuid import UUID
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/user",
+    tags=["user"]
+)
 
 
 @router.post(
-    path="/api/user",
+    path="",
     status_code=201,
     response_model=UserResponse,
     responses={
@@ -46,7 +49,7 @@ async def create_user(
 
 
 @router.get(
-    path="/api/user/{user_id}",
+    path="/{user_id}",
     status_code=200,
     response_model=UserResponse,
     responses={
@@ -74,7 +77,10 @@ async def get_user(
         user_repository: UserRepository = Depends(get_user_repository)
 ):
     async with session.begin():
-        user = await user_repository.get_user_by_id(session, UUID(user_id))
+        try:
+            user = await user_repository.get_user_by_id(session, UUID(user_id))
+        except:
+            raise HTTPException(status_code=422, detail="bad id")
     if user is None:
         raise HTTPException(status_code=404, detail="user with this email does not exists")
     response = from_user_to_user_response(user)
@@ -82,7 +88,7 @@ async def get_user(
 
 
 @router.delete(
-    path="/api/user/{user_id}",
+    path="/{user_id}",
     status_code=200,
     response_model=int,
     responses={

@@ -1,6 +1,6 @@
 DB_USER = "postgres"
 DB_USER_PASSWORD = "12345678"
-IP_ADDRESS = "localhost"
+IP_ADDRESS = "127.0.0.1"
 PORT = "5432"
 DB_NAME = "main"
 DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@{IP_ADDRESS}:{PORT}/{DB_NAME}"

@@ -12,7 +12,8 @@ from fastapi.responses import JSONResponse
 EXCLUDED_REQUESTS: dict[str, list] = {
     "/": ["POST", "GET"],
     "/docs": ["GET"],
-    "/openapi.json": ["GET"]
+    "/openapi.json": ["GET"],
+    "/meets": ["GET"]
 }
 
 
