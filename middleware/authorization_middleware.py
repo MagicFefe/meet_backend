@@ -10,7 +10,6 @@ from db.database import Database
 from asyncio import get_running_loop
 
 EXCLUDED_REQUESTS: dict[str, list] = {
-    "/": ["POST", "GET"],
     "/docs": ["GET"],
     "/openapi.json": ["GET"],
     "/sign_up": ["POST"],

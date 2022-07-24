@@ -26,9 +26,6 @@ router = APIRouter(
     status_code=201,
     response_model=UserResponse,
     responses={
-        201: {
-            "user": UserResponse
-        },
         409: {
             "description": "Conflict",
             "content": {
@@ -115,7 +112,7 @@ async def sign_in_user(
         }
     }
 )
-async def get_user(
+async def get_user_by_id(
         user_id: str = Path("User's id"),
         session: AsyncSession = Depends(get_session),
         user_repository: UserRepository = Depends(get_user_repository)

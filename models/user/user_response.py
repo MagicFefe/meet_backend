@@ -9,4 +9,4 @@ class UserResponse(BaseModel):
     country: str
     city: str
     jwt: str
-    image: str | None
+    image: str
