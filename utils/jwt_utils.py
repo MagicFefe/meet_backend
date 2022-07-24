@@ -1,6 +1,6 @@
 from jwcrypto.jwk import JWK
 from jwcrypto.jwt import JWT
-from config import JWK as SECRET
+from config import JWK_KEY as SECRET
 from config import JWK_TYPE
 from config import JWT_ALG
 from config import JWT_NAME

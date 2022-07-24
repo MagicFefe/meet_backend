@@ -8,3 +8,4 @@ class UserRegister(BaseModel):
     country: str
     city: str
     password: str
+    image: str | None

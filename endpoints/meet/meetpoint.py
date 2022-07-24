@@ -2,12 +2,16 @@ from json import loads
 from aioredis import Redis
 from fastapi import APIRouter, WebSocket, Depends
 from dependencies import get_meets_repository, get_redis_db
-from endpoints.meet.event_holder import EventHolder, MeetAdded, Event
+from endpoints.meet.event_holder import EventHolder, MeetAdded, Event, MeetDeleted
 from models.meet.meet import Meet
 from repositories.meet_repository import MeetRepository
 from utils.data.data_observer import DataObserver
+from starlette.websockets import WebSocketState
 
-router = APIRouter(prefix="/api/meet", tags=["meet"])
+router = APIRouter(
+    prefix="/api/meet",
+    tags=["meet"]
+)
 event_holder = EventHolder()
 
 
@@ -17,16 +21,16 @@ async def receive_meets(
         meets_db: Redis = Depends(get_redis_db),
         meets_repository: MeetRepository = Depends(get_meets_repository)
 ):
+    await websocket.accept()
+
+    # TODO: create cheking auth token in header
     async def handle_event(event: Event):
-        data = await meets_repository.get_meets(meets_db)
-        await websocket.send_json(
-            {
-                "meets": data
-            }
-        )
+        if websocket.application_state == WebSocketState.CONNECTED:
+            data = await meets_repository.get_meets(meets_db)
+            await websocket.send_json(data)
 
     observer = DataObserver(on_next=handle_event)
-    await websocket.accept()
+
     while True:
         await event_holder.event.subscribe(
             observer
@@ -34,8 +38,10 @@ async def receive_meets(
         try:
             client_message = await websocket.receive_json()
             if loads(client_message)["action"] == "close":
+                event_holder.event.unsubscribe(observer)
                 await websocket.close()
         except:
+            event_holder.event.unsubscribe(observer)
             return
 
 
@@ -50,3 +56,15 @@ async def create_meet(
     await meets_repository.create_meet(meets_db, meet)
     await event_holder.update_event(MeetAdded())
     return
+
+
+@router.delete(
+    path="/{meet_id}"
+)
+async def delete_meet(
+        meet_id: str,
+        meets_db: Redis = Depends(get_redis_db),
+        meets_repository: MeetRepository = Depends(get_meets_repository)
+):
+    await meets_repository.delete_meet(meets_db, meet_id)
+    await event_holder.update_event(MeetDeleted())

@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from uuid import UUID
 
 
 class MeetDB(BaseModel):
@@ -9,4 +8,6 @@ class MeetDB(BaseModel):
     meet_description: str
     author_name: str
     author_surname: str
+    latitude: float
+    longitude: float
     created_at: str

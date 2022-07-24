@@ -8,6 +8,8 @@ from sqlalchemy.future import select
 from utils.password_utils import get_hashed_password
 from utils.jwt_utils import generate_jwt
 from uuid import UUID
+from base64 import b64encode
+from config import USER_IMAGE_PLACEHOLDER_PATH, ENCODING
 
 
 class UserRepository:
@@ -44,7 +46,12 @@ def from_user_register_to_user(user_register: UserRegister) -> User:
     user.city = user_register.city
     user.country = user_register.country
     user.password = \
-        get_hashed_password(user_register.password, user_register.email, user_register.name, user_register.surname)
+        get_hashed_password(user_register.password, user_register.email)
+    if user_register.image is None:
+        with open(USER_IMAGE_PLACEHOLDER_PATH, "rb") as image_file:
+            user.image = b64encode(image_file.read()).decode(ENCODING)
+    else:
+        user.image = user_register.image
     return user
 
 
@@ -63,6 +70,7 @@ def from_user_to_user_response(user: User):
         email=user.email,
         country=user.country,
         city=user.city,
-        jwt=str(jwt)
+        jwt=str(jwt),
+        image=user.image
     )
     return user_response
