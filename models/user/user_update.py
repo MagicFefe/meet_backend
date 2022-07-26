@@ -1,15 +1,14 @@
 from pydantic import BaseModel
 
 
-class UserResponse(BaseModel):
+class UserUpdate(BaseModel):
     id: str
     name: str
     surname: str
-    email: str
+    new_email: str
+    old_email: str
     country: str
     city: str
     image: str
-
-
-class UserResponseWithToken(UserResponse):
-    jwt: str
+    old_password: str
+    new_password: str

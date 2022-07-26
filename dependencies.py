@@ -16,5 +16,5 @@ async def get_user_repository() -> UserRepository:
     return UserRepository()
 
 
-async def get_meets_repository() -> MeetRepository:
+async def get_meet_repository() -> MeetRepository:
     return MeetRepository()
