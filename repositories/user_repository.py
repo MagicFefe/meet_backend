@@ -59,7 +59,7 @@ class UserRepository:
             )
             await db_session.commit()
         new_user_db = await self.get_user_by_id(db_session, UUID(user.id))
-        new_user = from_user_to_user_response(new_user_db)
+        new_user = from_user_to_user_response_with_token(new_user_db)
         return new_user
 
     async def delete_user(self, db_session: AsyncSession, user_id: UUID):
@@ -92,38 +92,41 @@ def from_user_register_to_user(
     return user
 
 
+def from_user_to_user_response_with_token(
+        user: User,
+        image_file_manager: FileManager = FileManager(USER_IMAGE_FILE_STORAGE_PATH)
+):
+    jwt = generate_jwt(
+        {
+            "name": user.name,
+            "surname": user.surname,
+            "email": user.email
+        }
+    )
+    user_response = UserResponseWithToken(
+        id=str(user.id),
+        name=user.name,
+        surname=user.surname,
+        email=user.email,
+        country=user.country,
+        city=user.city,
+        jwt=str(jwt),
+        image=image_file_manager.read_file(user.image_path)
+    )
+    return user_response
+
+
 def from_user_to_user_response(
         user: User,
-        image_file_manager: FileManager = FileManager(USER_IMAGE_FILE_STORAGE_PATH),
-        without_token: bool = False
+        image_file_manager: FileManager = FileManager(USER_IMAGE_FILE_STORAGE_PATH)
 ):
-    if not without_token:
-        jwt = generate_jwt(
-            {
-                "name": user.name,
-                "surname": user.surname,
-                "email": user.email
-            }
-        )
-        user_response = UserResponseWithToken(
-            id=str(user.id),
-            name=user.name,
-            surname=user.surname,
-            email=user.email,
-            country=user.country,
-            city=user.city,
-            jwt=str(jwt),
-            image=image_file_manager.read_file(user.image_path)
-        )
-        return user_response
-    else:
-        user_response = UserResponse(
-            id=str(user.id),
-            name=user.name,
-            surname=user.surname,
-            email=user.email,
-            country=user.country,
-            city=user.city,
-            image=image_file_manager.read_file(user.image_path)
-        )
-        return user_response
+    user_response = UserResponse(
+        id=str(user.id),
+        name=user.name,
+        surname=user.surname,
+        email=user.email,
+        country=user.country,
+        city=user.city,
+        image=image_file_manager.read_file(user.image_path)
+    )
+    return user_response

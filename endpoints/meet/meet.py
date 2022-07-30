@@ -1,9 +1,10 @@
 from json import loads
 from aioredis import Redis
 from fastapi import APIRouter, WebSocket, Depends
-from dependencies import get_meet_repository, get_redis_db, get_user_repository, get_session
-from endpoints.meet.event_holder import EventHolder, MeetAdded, Event, MeetDeleted
+from dependencies import get_meet_repository, get_meet_db, get_user_repository, get_session, get_event_holder
+from endpoints.meet.event_holder import EventHolder, MeetAdded, Event, MeetDeleted, MeetUpdated
 from models.meet.meet import Meet
+from models.meet.meet_update import MeetUpdate
 from repositories.meet_repository import MeetRepository
 from utils.data.data_observer import DataObserver
 from starlette.websockets import WebSocketState
@@ -19,14 +20,14 @@ router = APIRouter(
     prefix="/api/meet",
     tags=["meet"]
 )
-event_holder = EventHolder()
 
 
 @router.websocket(path="/ws")
 async def receive_meets(
         websocket: WebSocket,
-        meet_db: Redis = Depends(get_redis_db),
-        meet_repository: MeetRepository = Depends(get_meet_repository)
+        meet_db: Redis = Depends(get_meet_db),
+        meet_repository: MeetRepository = Depends(get_meet_repository),
+        event_holder: EventHolder = Depends(get_event_holder)
 ):
     await websocket.accept()
 
@@ -60,8 +61,9 @@ async def receive_meets(
 )
 async def create_meet(
         meet: Meet,
-        meet_db: Redis = Depends(get_redis_db),
-        meet_repository: MeetRepository = Depends(get_meet_repository)
+        meet_db: Redis = Depends(get_meet_db),
+        meet_repository: MeetRepository = Depends(get_meet_repository),
+        event_holder: EventHolder = Depends(get_event_holder)
 ):
     await meet_repository.create_meet(meet_db, meet)
     await event_holder.update_event(MeetAdded())
@@ -74,7 +76,7 @@ async def create_meet(
 )
 async def get_meet_by_id(
         meet_id: str,
-        meet_db: Redis = Depends(get_redis_db),
+        meet_db: Redis = Depends(get_meet_db),
         meet_repository: MeetRepository = Depends(get_meet_repository),
         user_db_session: AsyncSession = Depends(get_session),
         user_repository: UserRepository = Depends(get_user_repository)
@@ -102,13 +104,27 @@ async def get_meet_by_id(
     return meet_details
 
 
+@router.put(
+    path=""
+)
+async def update_meet(
+        meet_update: MeetUpdate,
+        meet_db: Redis = Depends(get_meet_db),
+        meet_repository: MeetRepository = Depends(get_meet_repository),
+        event_holder: EventHolder = Depends(get_event_holder)
+):
+    await meet_repository.update_meet(meet_db, meet_update)
+    await event_holder.update_event(MeetUpdated())
+
+
 @router.delete(
     path="/{meet_id}"
 )
 async def delete_meet(
         meet_id: str,
-        meet_db: Redis = Depends(get_redis_db),
-        meet_repository: MeetRepository = Depends(get_meet_repository)
+        meet_db: Redis = Depends(get_meet_db),
+        meet_repository: MeetRepository = Depends(get_meet_repository),
+        event_holder: EventHolder = Depends(get_event_holder)
 ):
     await meet_repository.delete_meet(meet_db, meet_id)
     await event_holder.update_event(MeetDeleted())

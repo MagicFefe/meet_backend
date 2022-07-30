@@ -13,6 +13,10 @@ class MeetDeleted(Event):
     pass
 
 
+class MeetUpdated(Event):
+    pass
+
+
 class Idle(Event):
     pass
 

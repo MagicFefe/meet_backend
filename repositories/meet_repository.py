@@ -6,6 +6,7 @@ from uuid import uuid4
 from models.meet.meet_db import MeetDB
 from models.meet.meet_response import MeetResponse
 from datetime import datetime
+from models.meet.meet_update import MeetUpdate
 
 
 def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
@@ -37,6 +38,10 @@ class MeetRepository:
         meet_dict = decode_meet_from_bytes(meet_bytes)
         meet = from_dict_to_meet_response(meet_dict)
         return meet
+
+    async def update_meet(self, meet_db: Redis, meet: MeetUpdate):
+        async with meet_db.client() as connection:
+            await connection.hset(meet.id, mapping=meet.dict())
 
     async def delete_meet(self, meet_db: Redis, meet_id: str):
         async with meet_db.client() as connection:

@@ -1,10 +1,11 @@
 from http import HTTPStatus
 from fastapi import Depends, Path, HTTPException, APIRouter
 from models.user.user_register import UserRegister
-from models.user.user_response import UserResponseWithToken
+from models.user.user_response import UserResponseWithToken, UserResponse
 from models.user.user_update import UserUpdate
 from models.user.user_minimal import UserMinimal
-from repositories.user_repository import UserRepository, from_user_to_user_response
+from repositories.user_repository import UserRepository, from_user_to_user_response, \
+    from_user_to_user_response_with_token
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies import get_session, get_user_repository
 from exceptions import UserAlreadyExistsError, InvalidImageError
@@ -27,7 +28,7 @@ router = APIRouter(
             "description": "Conflict",
             "content": {
                 "application/json": {
-                    "example": {"description": "user with this new_email already exists"}
+                    "example": {"description": "user with this email already exists"}
                 }
             }
         }
@@ -47,10 +48,9 @@ async def sign_up_user(
         try:
             await repository.create_user(session, user_register)
         except UserAlreadyExistsError:
-            raise HTTPException(status_code=409, detail="user with this new_email already exists")
+            raise HTTPException(status_code=409, detail="user with this email already exists")
     created_user_db = await repository.get_user_by_email(session, user_register.email)
-    new_user = from_user_to_user_response(user=created_user_db, without_token=True)
-    return new_user
+    return from_user_to_user_response_with_token(created_user_db)
 
 
 @router.post(
@@ -58,9 +58,6 @@ async def sign_up_user(
     status_code=200,
     response_model=UserResponseWithToken,
     responses={
-        201: {
-            "user": UserResponseWithToken
-        },
         404: {
             "detail": "user does not exist"
         },
@@ -79,7 +76,7 @@ async def sign_in_user(
         raise HTTPException(status_code=404, detail="user does not exist")
     hashed_password = get_hashed_password(user_minimal.password, user_minimal.email)
     if user.password == hashed_password:
-        return from_user_to_user_response(user)
+        return from_user_to_user_response_with_token(user)
     else:
         raise HTTPException(status_code=422, detail="incorrect password")
 
@@ -87,16 +84,13 @@ async def sign_in_user(
 @router.get(
     path="/{user_id}",
     status_code=200,
-    response_model=UserResponseWithToken,
+    response_model=UserResponse,
     responses={
-        200: {
-            "user": UserResponseWithToken
-        },
         404: {
             "description": "Not found",
             "content": {
                 "application/json": {
-                    "example": {"description": "user with this new_email does not exists"}
+                    "example": {"description": "user with this email does not exists"}
                 }
             }
         }
@@ -113,9 +107,8 @@ async def get_user_by_id(
         except Exception:
             raise HTTPException(status_code=422, detail="bad id")
     if user is None:
-        raise HTTPException(status_code=404, detail="user with this new_email does not exists")
-    response = from_user_to_user_response(user)
-    return response
+        raise HTTPException(status_code=404, detail="user with this email does not exists")
+    return from_user_to_user_response(user)
 
 
 @router.put(
@@ -138,8 +131,8 @@ async def update_user_data(
         raise HTTPException(status_code=422, detail="invalid user id")
     if old_user.password != get_hashed_password(user_update.old_password, user_update.new_email):
         raise HTTPException(status_code=422, detail="incorrect password")
-    new_user = await user_repository.update_user(session, user_update)
-    return new_user
+    updated_user = await user_repository.update_user(session, user_update)
+    return updated_user
 
 
 @router.delete(
