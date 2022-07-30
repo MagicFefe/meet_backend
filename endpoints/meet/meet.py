@@ -3,7 +3,9 @@ from aioredis import Redis
 from fastapi import APIRouter, WebSocket, Depends
 from dependencies import get_meet_repository, get_meet_db, get_user_repository, get_session, get_event_holder
 from endpoints.meet.event_holder import EventHolder, MeetAdded, Event, MeetDeleted, MeetUpdated
+from exceptions import MeetPointAlreadyExistsError
 from models.meet.meet import Meet
+from models.meet.meet_delete import MeetDelete
 from models.meet.meet_update import MeetUpdate
 from repositories.meet_repository import MeetRepository
 from utils.data.data_observer import DataObserver
@@ -20,9 +22,11 @@ router = APIRouter(
     prefix="/api/meet",
     tags=["meet"]
 )
+meet_author_list: list[str] = []
 
-
-@router.websocket(path="/ws")
+@router.websocket(
+    path="/ws"
+)
 async def receive_meets(
         websocket: WebSocket,
         meet_db: Redis = Depends(get_meet_db),
@@ -31,7 +35,7 @@ async def receive_meets(
 ):
     await websocket.accept()
 
-    # TODO: create cheking auth token in header
+    # TODO: create checking auth token in header
     async def handle_event(event: Event):
         if websocket.application_state == WebSocketState.CONNECTED:
             meets = await meet_repository.get_meets(meet_db)
@@ -65,8 +69,11 @@ async def create_meet(
         meet_repository: MeetRepository = Depends(get_meet_repository),
         event_holder: EventHolder = Depends(get_event_holder)
 ):
-    await meet_repository.create_meet(meet_db, meet)
-    await event_holder.update_event(MeetAdded())
+    try:
+        await meet_repository.create_meet(meet_db, meet_author_list, meet)
+        await event_holder.update_event(MeetAdded())
+    except MeetPointAlreadyExistsError:
+        raise HTTPException(status_code=409, detail="meet point with this author's id already exists")
     return
 
 
@@ -118,13 +125,13 @@ async def update_meet(
 
 
 @router.delete(
-    path="/{meet_id}"
+    path=""
 )
 async def delete_meet(
-        meet_id: str,
+        meet_delete: MeetDelete,
         meet_db: Redis = Depends(get_meet_db),
         meet_repository: MeetRepository = Depends(get_meet_repository),
         event_holder: EventHolder = Depends(get_event_holder)
 ):
-    await meet_repository.delete_meet(meet_db, meet_id)
+    await meet_repository.delete_meet(meet_db, meet_author_list, meet_delete)
     await event_holder.update_event(MeetDeleted())

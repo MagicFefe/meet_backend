@@ -1,9 +1,11 @@
 from typing import Any
 
 from aioredis import Redis
+from exceptions import MeetPointAlreadyExistsError
 from models.meet.meet import Meet
 from uuid import uuid4
 from models.meet.meet_db import MeetDB
+from models.meet.meet_delete import MeetDelete
 from models.meet.meet_response import MeetResponse
 from datetime import datetime
 from models.meet.meet_update import MeetUpdate
@@ -17,10 +19,14 @@ def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
 
 
 class MeetRepository:
-    async def create_meet(self, meet_db: Redis, meet: Meet):
+    async def create_meet(self, meet_db: Redis, meet_author_list: list[str], meet: Meet):
+        if meet.author_id in meet_author_list:
+            raise MeetPointAlreadyExistsError()
+        else:
+            meet_author_list.append(meet.author_id)
         async with meet_db.client() as connection:
-            meet_db = from_meet_to_meet_db(meet)
-            await connection.hset(meet_db.id, mapping=meet_db.dict())
+            meet_db_model = from_meet_to_meet_db(meet)
+            await connection.hset(meet_db_model.id, mapping=meet_db_model.dict())
 
     async def get_meets(self, meets_db: Redis):
         async with meets_db.client() as connection:
@@ -43,9 +49,11 @@ class MeetRepository:
         async with meet_db.client() as connection:
             await connection.hset(meet.id, mapping=meet.dict())
 
-    async def delete_meet(self, meet_db: Redis, meet_id: str):
+    async def delete_meet(self, meet_db: Redis, meet_author_list: list[str], meet: MeetDelete):
         async with meet_db.client() as connection:
-            await connection.delete(meet_id)
+            await connection.delete(meet.id)
+        if meet.author_id in meet_author_list:
+            meet_author_list.remove(meet.author_id)
 
 
 def from_meet_to_meet_db(meet: Meet) -> MeetDB:
