@@ -39,22 +39,25 @@ class UserRepository:
             self,
             db_session: AsyncSession,
             user: UserUpdate,
+            old_user_email: str,
             file_manager: FileManager = FileManager(USER_IMAGE_FILE_STORAGE_PATH)
     ):
-        old_user_image_file_name = f"{user.old_email}.txt"
-        file_manager.delete_file(old_user_image_file_name)
-        new_user_image_file_name = f"{user.new_email}.txt"
-        new_image_path = file_manager.write_or_create_file(new_user_image_file_name, user.image)
+        old_user_image_filename = f"{old_user_email}.txt"
+        file_manager.delete_file(old_user_image_filename)
+        new_user_image_filename = f"{user.email}.txt"
+        new_image_filename = file_manager.write_or_create_file(new_user_image_filename, user.image)
         async with db_session:
             await db_session.execute(
                 update(User).where(User.id == UUID(user.id)).values(
                     name=user.name,
                     surname=user.surname,
-                    email=user.new_email,
+                    about=user.about,
+                    dob=user.dob,
+                    email=user.email,
                     country=user.country,
                     city=user.city,
-                    password=get_hashed_password(user.new_password, user.new_email),
-                    image_path=new_image_path
+                    password=get_hashed_password(user.new_password, user.email),
+                    image_filename=new_image_filename
                 )
             )
             await db_session.commit()
@@ -76,6 +79,8 @@ def from_user_register_to_user(
     user = User()
     user.name = user_register.name
     user.surname = user_register.surname
+    user.dob = user_register.dob
+    user.about = user_register.about
     user.email = user_register.email
     user.city = user_register.city
     user.country = user_register.country
@@ -85,10 +90,10 @@ def from_user_register_to_user(
     if user_register.image is None:
         with open(USER_IMAGE_PLACEHOLDER_PATH, "rb") as image_file:
             image = b64encode(image_file.read()).decode(ENCODING)
-        user.image_path = image_file_manager.write_or_create_file(image_file_name, image)
+        user.image_filename = image_file_manager.write_or_create_file(image_file_name, image)
     else:
         image = user_register.image
-        user.image_path = image_file_manager.write_or_create_file(image_file_name, image)
+        user.image_filename = image_file_manager.write_or_create_file(image_file_name, image)
     return user
 
 
@@ -107,11 +112,13 @@ def from_user_to_user_response_with_token(
         id=str(user.id),
         name=user.name,
         surname=user.surname,
+        about=user.about,
+        dob=user.dob,
         email=user.email,
         country=user.country,
         city=user.city,
         jwt=str(jwt),
-        image=image_file_manager.read_file(user.image_path)
+        image=image_file_manager.read_file(user.image_filename)
     )
     return user_response
 
@@ -124,9 +131,11 @@ def from_user_to_user_response(
         id=str(user.id),
         name=user.name,
         surname=user.surname,
+        about=user.about,
+        dob=user.dob,
         email=user.email,
         country=user.country,
         city=user.city,
-        image=image_file_manager.read_file(user.image_path)
+        image=image_file_manager.read_file(user.image_filename)
     )
     return user_response

@@ -24,6 +24,7 @@ router = APIRouter(
 )
 meet_author_list: list[str] = []
 
+
 @router.websocket(
     path="/ws"
 )
@@ -101,7 +102,7 @@ async def get_meet_by_id(
         author_id=meet.author_id,
         author_name=user.name,
         author_surname=user.surname,
-        author_image=image_file_manger.read_file(user.image_path),
+        author_image=image_file_manger.read_file(user.image_filename),
         meet_name=meet.meet_name,
         meet_description=meet.meet_description,
         latitude=meet.latitude,

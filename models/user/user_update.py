@@ -5,8 +5,9 @@ class UserUpdate(BaseModel):
     id: str
     name: str
     surname: str
-    new_email: str
-    old_email: str
+    about: str
+    dob: str
+    email: str
     country: str
     city: str
     image: str

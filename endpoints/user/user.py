@@ -12,6 +12,7 @@ from exceptions import UserAlreadyExistsError, InvalidImageError
 from uuid import UUID
 from utils.password_utils import get_hashed_password
 from utils.image_validation import validate_image
+from sqlalchemy.orm.exc import UnmappedInstanceError
 
 router = APIRouter(
     prefix="/api/user",
@@ -107,7 +108,7 @@ async def get_user_by_id(
         except Exception:
             raise HTTPException(status_code=422, detail="bad id")
     if user is None:
-        raise HTTPException(status_code=404, detail="user with this email does not exists")
+        raise HTTPException(status_code=404, detail="user with this id does not exists")
     return from_user_to_user_response(user)
 
 
@@ -129,9 +130,9 @@ async def update_user_data(
         old_user = await user_repository.get_user_by_id(session, UUID(user_update.id))
     except Exception:
         raise HTTPException(status_code=422, detail="invalid user id")
-    if old_user.password != get_hashed_password(user_update.old_password, user_update.new_email):
+    if old_user.password != get_hashed_password(user_update.old_password, old_user.email):
         raise HTTPException(status_code=422, detail="incorrect password")
-    updated_user = await user_repository.update_user(session, user_update)
+    updated_user = await user_repository.update_user(session, user_update, old_user.email)
     return updated_user
 
 
@@ -156,5 +157,8 @@ async def delete_user(
         repository: UserRepository = Depends(get_user_repository)
 ):
     async with session.begin():
-        await repository.delete_user(session, UUID(user_id))
+        try:
+            await repository.delete_user(session, UUID(user_id))
+        except UnmappedInstanceError:
+            raise HTTPException(status_code=422, detail="bad id")
     return HTTPStatus.OK

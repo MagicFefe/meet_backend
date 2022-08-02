@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from db.database import Database
 from dependencies import get_session
-from endpoints import user
+from endpoints.user import user
 from endpoints.meet import meet
 from starlette.middleware import Middleware
 from middleware.authorization_middleware import AuthorizationMiddleware
@@ -27,6 +27,5 @@ async def init():
 @app.on_event("shutdown")
 async def disconnect():
     await db.engine.dispose()
-
 
 app.dependency_overrides[get_session] = db.get_session

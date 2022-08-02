@@ -23,9 +23,10 @@ class FileManager:
         file_path = self.full_storage_path + file_name
         with open(file_path, "w") as file:
             file.write(data)
-        return file_path
+        return file_name
 
-    def read_file(self, file_path: str) -> str:
+    def read_file(self, file_name: str) -> str:
+        file_path = self.full_storage_path + file_name
         with open(file_path, "r") as file:
             data = file.read()
         return data

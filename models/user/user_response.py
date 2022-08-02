@@ -5,6 +5,8 @@ class UserResponse(BaseModel):
     id: str
     name: str
     surname: str
+    about: str
+    dob: str
     email: str
     country: str
     city: str
