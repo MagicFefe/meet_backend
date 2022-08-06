@@ -1,4 +1,4 @@
-from os import mkdir, remove, path
+from os import remove, path, makedirs
 from exceptions import InvalidFilePathError
 
 
@@ -17,12 +17,22 @@ class FileManager:
         else:
             self.full_storage_path = f"files/storage{storage_path}"
         if not(path.exists(self.full_storage_path)):
-            mkdir(self.full_storage_path, 0o666)
+            makedirs(self.full_storage_path, 0o666, exist_ok=True)
+
+    def file_exists(self, file_name: str) -> bool:
+        file_path = self.full_storage_path + file_name
+        return path.exists(file_path)
 
     def write_or_create_file(self, file_name: str, data: str) -> str:
         file_path = self.full_storage_path + file_name
         with open(file_path, "w") as file:
             file.write(data)
+        return file_name
+
+    def write_or_create_file_bytes(self, file_name: str, data: bytes) -> str:
+        file_path = self.full_storage_path + file_name
+        with open(file_path, "wb") as new_file:
+            new_file.write(data)
         return file_name
 
     def read_file(self, file_name: str) -> str:
@@ -31,7 +41,21 @@ class FileManager:
             data = file.read()
         return data
 
+    def rewrite_file(self, file_name: str, data: str):
+        file_path = self.full_storage_path + file_name
+        with open(file_path, "r+") as file:
+            file.truncate(0)
+            file.seek(0)
+            file.write(data)
+
+    def rewrite_file_bytes(self, file_name: str, data: bytes):
+        file_path = self.full_storage_path + file_name
+        with open(file_path, "rb+") as file:
+            file.truncate(0)
+            file.seek(0)
+            file.write(data)
+
     def delete_file(self, file_name: str):
         file_path = self.full_storage_path + file_name
-        if path.exists(file_path):
+        if self.file_exists(file_name):
             remove(file_path)

@@ -1,5 +1,4 @@
 from typing import Any
-
 from aioredis import Redis
 from exceptions import MeetPointAlreadyExistsError
 from models.meet.meet import Meet
@@ -11,25 +10,24 @@ from datetime import datetime
 from models.meet.meet_update import MeetUpdate
 
 
-def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
-    meet: dict[str, str] = {}
-    for id, value in meet_bytes.items():
-        meet[id.decode("utf-8")] = value.decode("utf-8")
-    return meet
-
-
 class MeetRepository:
-    async def create_meet(self, meet_db: Redis, meet_author_list: list[str], meet: Meet):
+    def __init__(
+            self,
+            meet_db: Redis
+    ):
+        self.__meet_db = meet_db
+
+    async def create_meet(self, meet_author_list: list[str], meet: Meet):
         if meet.author_id in meet_author_list:
             raise MeetPointAlreadyExistsError()
         else:
             meet_author_list.append(meet.author_id)
-        async with meet_db.client() as connection:
+        async with self.__meet_db.client() as connection:
             meet_db_model = from_meet_to_meet_db(meet)
             await connection.hset(meet_db_model.id, mapping=meet_db_model.dict())
 
-    async def get_meets(self, meets_db: Redis):
-        async with meets_db.client() as connection:
+    async def get_meets(self):
+        async with self.__meet_db.client() as connection:
             keys = await connection.keys()
             meets = []
             for key in keys:
@@ -38,19 +36,19 @@ class MeetRepository:
                 meets.append(from_dict_to_meet_response(meet))
         return meets
 
-    async def get_meet_by_id(self, meet_db: Redis, meet_id: str):
-        async with meet_db.client() as connection:
+    async def get_meet_by_id(self, meet_id: str):
+        async with self.__meet_db.client() as connection:
             meet_bytes = await connection.hgetall(meet_id)
         meet_dict = decode_meet_from_bytes(meet_bytes)
         meet = from_dict_to_meet_response(meet_dict)
         return meet
 
-    async def update_meet(self, meet_db: Redis, meet: MeetUpdate):
-        async with meet_db.client() as connection:
+    async def update_meet(self, meet: MeetUpdate):
+        async with self.__meet_db.client() as connection:
             await connection.hset(meet.id, mapping=meet.dict())
 
-    async def delete_meet(self, meet_db: Redis, meet_author_list: list[str], meet: MeetDelete):
-        async with meet_db.client() as connection:
+    async def delete_meet(self, meet_author_list: list[str], meet: MeetDelete):
+        async with self.__meet_db.client() as connection:
             await connection.delete(meet.id)
         if meet.author_id in meet_author_list:
             meet_author_list.remove(meet.author_id)
@@ -95,3 +93,10 @@ def from_dict_to_meet_response(meet_dict: dict[str, str]) -> MeetResponse:
         longitude=meet_dict["longitude"],
         created_at=meet_dict["created_at"]
     )
+
+
+def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
+    meet: dict[str, str] = {}
+    for id, value in meet_bytes.items():
+        meet[id.decode("utf-8")] = value.decode("utf-8")
+    return meet

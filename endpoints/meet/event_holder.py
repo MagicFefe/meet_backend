@@ -1,4 +1,4 @@
-from utils.data.observable_data import MutableObservableData
+from utils.observable_data.observable_data import MutableObservableData
 
 
 class Event:
