@@ -3,6 +3,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import FastAPI
 from db.database import Database
 from di.application_container import ApplicationContainer
+from endpoints.feedback import feedback
 from endpoints.update import update
 from endpoints.user import user
 from endpoints.meet import meet
@@ -17,6 +18,7 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(meet.router)
 app.include_router(update.router)
+app.include_router(feedback.router)
 
 
 @app.on_event("startup")

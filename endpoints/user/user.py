@@ -38,8 +38,9 @@ router = APIRouter(
 async def get_user_by_id(
         user_id: str,
         user_repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
-        user_image_file_manager: FileManager =
-        Depends(Provide[ApplicationContainer.file_storage_container.user_image_file_manager])
+        user_image_file_manager: FileManager = Depends(
+            Provide[ApplicationContainer.file_storage_container.user_image_file_manager]
+        )
 ):
     try:
         user = await user_repository.get_user_by_id(UUID(user_id))

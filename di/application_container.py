@@ -36,6 +36,6 @@ class ApplicationContainer(containers.DeclarativeContainer):
     repository_container = providers.Container(
         RepositoryContainer,
         meet_db=db_container.meet_db,
-        user_db_session=db_container.user_db_session,
+        db_session=db_container.db_session,
         user_image_file_manager=file_storage_container.user_image_file_manager
     )

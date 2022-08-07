@@ -15,6 +15,6 @@ class DbContainer(containers.DeclarativeContainer):
         encoding=ENCODING
     )
 
-    user_db_session = providers.Resource(
+    db_session = providers.Resource(
         db.provided.get_session()
     )
