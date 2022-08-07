@@ -4,8 +4,8 @@ from starlette import status
 from di.application_container import ApplicationContainer
 from exceptions import InvalidImageError, UserAlreadyExistsError
 from files.file_manager import FileManager
-from models.user.user_minimal import UserMinimal
-from models.user.user_register import UserRegister
+from models.auth.sign_in import SignIn
+from models.auth.sign_up import SignUp
 from models.user.user_response import UserResponseWithToken
 from repositories.user_repository import UserRepository, from_user_to_user_response_with_token
 from utils.image_validation import validate_image
@@ -33,22 +33,22 @@ router = APIRouter(
     }
 )
 @inject
-async def sign_up_user(
-        user_register: UserRegister,
+async def sign_up(
+        sign_up_model: SignUp,
         repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
         user_image_file_manager: FileManager =
         Depends(Provide[ApplicationContainer.file_storage_container.user_image_file_manager])
 ):
-    if not (user_register.image is None):
+    if not (sign_up_model.image is None):
         try:
-            validate_image(user_register.image)
+            validate_image(sign_up_model.image)
         except InvalidImageError as error:
             raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=error.detail)
     try:
-        await repository.create_user(user_register)
+        await repository.create_user(sign_up_model)
     except UserAlreadyExistsError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="user with this email already exists")
-    created_user_db = await repository.get_user_by_email(user_register.email)
+    created_user_db = await repository.get_user_by_email(sign_up_model.email)
     return from_user_to_user_response_with_token(created_user_db, user_image_file_manager)
 
 
@@ -66,16 +66,16 @@ async def sign_up_user(
     }
 )
 @inject
-async def sign_in_user(
-        user_minimal: UserMinimal,
+async def sign_in(
+        sign_in_model: SignIn,
         repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
         user_image_file_manager: FileManager =
         Depends(Provide[ApplicationContainer.file_storage_container.user_image_file_manager])
 ):
-    user = await repository.get_user_by_email(user_minimal.email)
+    user = await repository.get_user_by_email(sign_in_model.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist")
-    hashed_password = get_hashed_password(user_minimal.password, user_minimal.email)
+    hashed_password = get_hashed_password(sign_in_model.password, sign_in_model.email)
     if user.password == hashed_password:
         return from_user_to_user_response_with_token(user, user_image_file_manager)
     else:

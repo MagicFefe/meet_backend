@@ -12,6 +12,7 @@ class User(Base):
     surname = Column(String, nullable=False)
     about = Column(String, nullable=False)
     dob = Column(String, nullable=False)
+    gender = Column(String, nullable=False)
     email = Column(String, nullable=False)
     country = Column(String, nullable=False)
     city = Column(String, nullable=False)

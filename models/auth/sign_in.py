@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 
-class UserMinimal(BaseModel):
+class SignIn(BaseModel):
     email: str
     password: str
