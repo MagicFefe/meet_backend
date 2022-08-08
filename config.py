@@ -1,11 +1,13 @@
-DB_USER = "postgres"
-DB_USER_PASSWORD = "12345678"
+from utils.environ_utils import get_or_default
+
+DB_USER = get_or_default("POSTGRES_USER", "postgres")
+DB_USER_PASSWORD = get_or_default("POSTGRES_PASSWORD", "12345678")
 IP_ADDRESS = "127.0.0.1"
 PORT = "5432"
-DB_NAME = "main"
-DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@{IP_ADDRESS}:{PORT}/{DB_NAME}"
+DB_NAME = get_or_default("POSTGRES_DB", "main")
+DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@db/{DB_NAME}"
 MEET_DB_NAME = "1"
-MEET_DB_URL = f"redis://{IP_ADDRESS}/{MEET_DB_NAME}"
+MEET_DB_URL = f"redis://{IP_ADDRESS}:6379/{MEET_DB_NAME}"
 JWT_ALG = "HS256"
 JWT_NAME = "JWT"
 JWK_KEY = "ytXtB53Ku62pZdC-qBH3mJwgsxQThvBp4wfNHCUyS4HkUKA8Q9NEEzxy7Xl9oztmTpRheoG2008VEocBu7kqJw"
