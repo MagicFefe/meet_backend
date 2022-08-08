@@ -22,7 +22,10 @@ class ListSaver:
             else:
                 self.__file_manager.write_or_create_file(self.__saved_list_filename, meet_authors)
         else:
-            self.__file_manager.rewrite_file(self.__saved_list_filename, "")
+            if self.__file_manager.file_exists(self.__saved_list_filename):
+                self.__file_manager.rewrite_file(self.__saved_list_filename, "")
+            else:
+                self.__file_manager.write_or_create_file(self.__saved_list_filename, "")
 
     def get_list(self) -> list[str]:
         if self.__file_manager.file_exists(self.__saved_list_filename):
