@@ -8,7 +8,7 @@ from di.application_container import ApplicationContainer
 from files.file_manager import FileManager
 from config import SUPPORTED_UPDATE_FILE_CONTENT_TYPES, SUPPORTED_PLATFORMS, MIN_UPDATE_FILE_SIZE, \
     ANDROID_CLIENT_PLATFORM_NAME, FILE_MEDIA_TYPE_ANDROID, ANDROID_UPDATE_FILENAME, \
-    CURRENT_VERSION_UPDATE_FILE_FILENAME, ADMIN_SECRET
+    CURRENT_VERSION_UPDATE_FILE_FILENAME
 from utils.version_utils import first_version_is_lower
 
 router = APIRouter(
@@ -28,9 +28,6 @@ async def upload_update(
             Provide[ApplicationContainer.file_storage_container.update_file_file_manager_android]
         )
 ):
-    admin_secret = request.headers.get("admin-secret", None)
-    if (admin_secret is None) or not (admin_secret == ADMIN_SECRET):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="you do not have admin rights")
     client_platform = request.path_params.get("client_platform", None)
     if (client_platform is None) or not (client_platform in SUPPORTED_PLATFORMS):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported client platform")
