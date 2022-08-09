@@ -1,10 +1,10 @@
-from utils.environ_utils import get_or_default
+from os import getenv
 
-DB_USER = get_or_default("POSTGRES_USER", "postgres")
-DB_USER_PASSWORD = get_or_default("POSTGRES_PASSWORD", "12345678")
+DB_USER = getenv("POSTGRES_USER", "postgres")
+DB_USER_PASSWORD = getenv("POSTGRES_PASSWORD", "12345678")
 IP_ADDRESS = "127.0.0.1"
 PORT = "5432"
-DB_NAME = get_or_default("POSTGRES_DB", "main")
+DB_NAME = getenv("POSTGRES_DB", "main")
 DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@postgres/{DB_NAME}"
 MEET_DB_NAME = "1"
 MEET_DB_URL = f"redis://redis/{MEET_DB_NAME}"
