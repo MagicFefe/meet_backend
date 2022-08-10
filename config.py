@@ -1,13 +1,17 @@
 from os import getenv
 
-DB_USER = getenv("POSTGRES_USER", "postgres")
-DB_USER_PASSWORD = getenv("POSTGRES_PASSWORD", "12345678")
-IP_ADDRESS = "127.0.0.1"
-PORT = "5432"
-DB_NAME = getenv("POSTGRES_DB", "main")
-DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@postgres/{DB_NAME}"
-MEET_DB_NAME = "1"
-MEET_DB_URL = f"redis://redis/{MEET_DB_NAME}"
+DEFAULT_HOST = "127.0.0.1"
+DB_USER = getenv("PGUSER", "postgres")
+DB_USER_PASSWORD = getenv("PGPASSWORD", "12345678")
+DB_NAME = getenv("PGDATABASE", "main")
+DB_HOST = getenv("PGHOST", DEFAULT_HOST)
+DB_PORT = getenv("PGPORT", "5432")
+DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+MEET_DB_HOST = getenv("REDISHOST", DEFAULT_HOST)
+MEET_DB_PASSWORD = getenv("REDISPASSWORD", "6379")
+MEET_DB_PORT = getenv("REDISPORT", "")
+MEET_DB_USER = getenv("REDISUSER", "")
+MEET_DB_URL = f"redis://{MEET_DB_USER}:{MEET_DB_PASSWORD}@{MEET_DB_HOST}:{MEET_DB_PORT}"
 JWT_ALG = "HS256"
 JWT_NAME = "JWT"
 JWK_KEY = "ytXtB53Ku62pZdC-qBH3mJwgsxQThvBp4wfNHCUyS4HkUKA8Q9NEEzxy7Xl9oztmTpRheoG2008VEocBu7kqJw"
