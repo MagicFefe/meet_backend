@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable, AsyncIterator
 from exceptions import UserAlreadyExistsError
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.auth.sign_up import SignUp
@@ -18,28 +18,30 @@ from files.file_manager import FileManager
 class UserRepository:
     def __init__(
             self,
-            db_session: AsyncSession,
-            user_image_file_manager: FileManager
+            user_image_file_manager: FileManager,
+            db_session: Callable[[], AsyncIterator[AsyncSession]]
     ):
         self.__db_session = db_session
         self.__user_image_file_manager = user_image_file_manager
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        result = await self.__db_session.execute(select(User).where(User.email == email))
-        return result.scalar_one_or_none()
+        async with self.__db_session() as session:
+            result = await session.execute(select(User).where(User.email == email))
+            return result.scalar_one_or_none()
 
     async def get_user_by_id(self, user_id: UUID) -> Optional[User]:
-        result = await self.__db_session.execute(select(User).where(User.id == user_id))
-        return result.scalar_one_or_none()
+        async with self.__db_session() as session:
+            result = await session.execute(select(User).where(User.id == user_id))
+            return result.scalar_one_or_none()
 
     async def create_user(self, new_user: SignUp):
-        async with self.__db_session:
+        async with self.__db_session() as session:
             user_db = await self.get_user_by_email(new_user.email)
             user_not_exists: bool = user_db is None
             if user_not_exists:
                 user_db = from_sign_up_to_user(new_user, self.__user_image_file_manager)
-                self.__db_session.add(user_db)
-                await self.__db_session.commit()
+                session.add(user_db)
+                await session.commit()
             else:
                 raise UserAlreadyExistsError("user already exists, cannot register")
 
@@ -52,8 +54,8 @@ class UserRepository:
         self.__user_image_file_manager.delete_file(old_user_image_filename)
         new_user_image_filename = f"{user.email}.txt"
         new_image_filename = self.__user_image_file_manager.write_or_create_file(new_user_image_filename, user.image)
-        async with self.__db_session:
-            await self.__db_session.execute(
+        async with self.__db_session() as session:
+            await session.execute(
                 update(User).where(User.id == UUID(user.id)).values(
                     name=user.name,
                     surname=user.surname,
@@ -67,16 +69,16 @@ class UserRepository:
                     image_filename=new_image_filename
                 )
             )
-            await self.__db_session.commit()
-
-        new_user_db = await self.get_user_by_id(UUID(user.id))
-        new_user = from_user_to_user_response_with_token(new_user_db, self.__user_image_file_manager)
-        return new_user
+            await session.commit()
+            new_user_db = await self.get_user_by_id(UUID(user.id))
+            new_user = from_user_to_user_response_with_token(new_user_db, self.__user_image_file_manager)
+            return new_user
 
     async def delete_user(self, user_id: UUID):
         user = await self.get_user_by_id(user_id)
-        await self.__db_session.delete(user)
-        await self.__db_session.commit()
+        async with self.__db_session() as session:
+            await session.delete(user)
+            await session.commit()
 
 
 def from_sign_up_to_user(

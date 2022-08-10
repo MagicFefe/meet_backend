@@ -16,8 +16,8 @@ from repositories.user_repository import UserRepository
 from uuid import UUID
 from fastapi import HTTPException
 from files.file_manager import FileManager
-from config import USER_IMAGE_FILE_STORAGE_PATH
 from utils.saveable_list.saveable_list import SaveableList
+from request_checkers.ws_check_request import check_ws_header
 
 router = APIRouter(
     prefix="/api/meet",
@@ -35,8 +35,8 @@ async def receive_meets(
         event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder])
 ):
     await websocket.accept()
+    await check_ws_header(websocket)
 
-    # TODO: create checking auth token in header
     async def handle_event(event: Event):
         if websocket.application_state == WebSocketState.CONNECTED:
             meets = await meet_repository.get_meets()
@@ -90,22 +90,25 @@ async def create_meet(
 async def get_meet_by_id(
         meet_id: str,
         meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
-        user_repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository])
+        user_repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
+        image_file_manager: FileManager = Depends(
+            Provide[ApplicationContainer.file_storage_container.user_image_file_manager]
+        )
 ):
-    image_file_manger: FileManager = FileManager(USER_IMAGE_FILE_STORAGE_PATH)
     try:
         meet = await meet_repository.get_meet_by_id(meet_id)
     except Exception:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid id")
     user = await user_repository.get_user_by_id(UUID(meet.author_id))
     if user is None:
+        await meet_repository.delete_invalid_meet(meet_id)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="user does not exist")
     meet_details = MeetResponseDetails(
         id=meet.id,
         author_id=meet.author_id,
         author_name=user.name,
         author_surname=user.surname,
-        author_image=image_file_manger.read_file(user.image_filename),
+        author_image=image_file_manager.read_file(user.image_filename),
         meet_name=meet.meet_name,
         meet_description=meet.meet_description,
         latitude=meet.latitude,

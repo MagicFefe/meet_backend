@@ -1,7 +1,7 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from starlette import status
-from custom_route.admin_check_route import AdminRightsRoute
+from request_checkers.admin_check_route import AdminRightsRoute
 from di.application_container import ApplicationContainer
 from models.feedback.feedback_add import FeedbackAdd
 from models.feedback.feedback_response import FeedbackResponse

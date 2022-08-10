@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from starlette import status
 from starlette.requests import Request
 from fastapi.responses import FileResponse
-from custom_route.admin_check_route import AdminRightsRoute
+from request_checkers.admin_check_route import AdminRightsRoute
 from di.application_container import ApplicationContainer
 from files.file_manager import FileManager
 from config import SUPPORTED_UPDATE_FILE_CONTENT_TYPES, SUPPORTED_PLATFORMS, MIN_UPDATE_FILE_SIZE, \

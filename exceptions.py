@@ -2,6 +2,10 @@ class UserAlreadyExistsError(Exception):
     pass
 
 
+class UserDoesNotExistError(Exception):
+    pass
+
+
 class MeetPointAlreadyExistsError(Exception):
     pass
 

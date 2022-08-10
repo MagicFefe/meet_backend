@@ -53,6 +53,10 @@ class MeetRepository:
         if meet.author_id in meet_author_list:
             meet_author_list.remove(meet.author_id)
 
+    async def delete_invalid_meet(self, meet_id: str):
+        async with self.__meet_db.client() as connection:
+            await connection.delete(meet_id)
+
 
 def from_meet_to_meet_db(meet: Meet) -> MeetDB:
     meet_id = str(uuid4())

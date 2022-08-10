@@ -14,7 +14,3 @@ class DbContainer(containers.DeclarativeContainer):
         url=MEET_DB_URL,
         encoding=ENCODING
     )
-
-    db_session = providers.Resource(
-        db.provided.get_session()
-    )

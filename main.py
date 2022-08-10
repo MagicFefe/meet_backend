@@ -8,7 +8,7 @@ from endpoints.update import update
 from endpoints.user import user
 from endpoints.meet import meet
 from endpoints.auth import auth
-from middleware.authorization_middleware import AuthorizationMiddleware
+from request_checkers.authorization_middleware import AuthorizationMiddleware
 from repositories.user_repository import UserRepository
 from utils.saveable_list.saveable_list import SaveableList
 
