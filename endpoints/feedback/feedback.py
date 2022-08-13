@@ -1,11 +1,12 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from starlette import status
+from db.enitites.feedback.mappers.mappers import from_feedback_to_feedback_response
 from request_checkers.admin_check_route import AdminRightsRoute
 from di.application_container import ApplicationContainer
 from models.feedback.feedback_add import FeedbackAdd
 from models.feedback.feedback_response import FeedbackResponse
-from repositories.feedback_repository import FeedbackRepository, from_feedback_to_feedback_response
+from services.feedback.feedback_service import FeedbackService
 
 router = APIRouter(
     prefix="/api/feedback",
@@ -20,11 +21,11 @@ router = APIRouter(
 @inject
 async def send_feedback(
         new_feedback: FeedbackAdd,
-        feedback_repository: FeedbackRepository = Depends(
-            Provide[ApplicationContainer.repository_container.feedback_repository]
+        service: FeedbackService = Depends(
+            Provide[ApplicationContainer.service_container.feedback_service]
         )
 ):
-    await feedback_repository.add_feedback(new_feedback)
+    await service.add_feedback(new_feedback)
     return status.HTTP_200_OK
 
 
@@ -34,11 +35,11 @@ async def send_feedback(
 )
 @inject
 async def get_all_feedbacks(
-        feedback_repository: FeedbackRepository = Depends(
-            Provide[ApplicationContainer.repository_container.feedback_repository]
+        service: FeedbackService = Depends(
+            Provide[ApplicationContainer.service_container.feedback_service]
         )
 ):
-    feedbacks = await feedback_repository.get_all_feedbacks()
+    feedbacks = await service.get_all_feedbacks()
     feedback_response_list: list[FeedbackResponse] = []
     for feedback in feedbacks:
         feedback_response_list.append(from_feedback_to_feedback_response(feedback))

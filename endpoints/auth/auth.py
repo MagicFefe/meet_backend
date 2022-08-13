@@ -1,13 +1,14 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import Depends, HTTPException, APIRouter
 from starlette import status
+from db.enitites.user.mappers.mappers import from_user_to_user_response_with_token
 from di.application_container import ApplicationContainer
 from exceptions import InvalidImageError, UserAlreadyExistsError
 from files.file_manager import FileManager
 from models.auth.sign_in import SignIn
 from models.auth.sign_up import SignUp
 from models.user.user_response import UserResponseWithToken
-from repositories.user_repository import UserRepository, from_user_to_user_response_with_token
+from services.user.user_service import UserService
 from utils.image_validation import validate_image
 from utils.password_utils import get_hashed_password
 
@@ -35,7 +36,7 @@ router = APIRouter(
 @inject
 async def sign_up(
         sign_up_model: SignUp,
-        repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
+        service: UserService = Depends(Provide[ApplicationContainer.service_container.user_service]),
         user_image_file_manager: FileManager =
         Depends(Provide[ApplicationContainer.file_storage_container.user_image_file_manager])
 ):
@@ -45,11 +46,12 @@ async def sign_up(
         except InvalidImageError as error:
             raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=error.detail)
     try:
-        await repository.create_user(sign_up_model)
+        await service.create_user(sign_up_model)
     except UserAlreadyExistsError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="user with this email already exists")
-    created_user_db = await repository.get_user_by_email(sign_up_model.email)
-    return from_user_to_user_response_with_token(created_user_db, user_image_file_manager)
+    created_user_db = await service.get_user_by_email(sign_up_model.email)
+    created_user = from_user_to_user_response_with_token(created_user_db, user_image_file_manager)
+    return created_user
 
 
 @router.post(
@@ -68,15 +70,16 @@ async def sign_up(
 @inject
 async def sign_in(
         sign_in_model: SignIn,
-        repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
+        service: UserService = Depends(Provide[ApplicationContainer.service_container.user_service]),
         user_image_file_manager: FileManager =
         Depends(Provide[ApplicationContainer.file_storage_container.user_image_file_manager])
 ):
-    user = await repository.get_user_by_email(sign_in_model.email)
+    user = await service.get_user_by_email(sign_in_model.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist")
     hashed_password = get_hashed_password(sign_in_model.password, sign_in_model.email)
     if user.password == hashed_password:
-        return from_user_to_user_response_with_token(user, user_image_file_manager)
+        existing_user = from_user_to_user_response_with_token(user, user_image_file_manager)
+        return existing_user
     else:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="incorrect password")

@@ -1,10 +1,9 @@
 from typing import AsyncIterator, Callable
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from db.enitites.feedback.feedback import Feedback
 from models.feedback.feedback_add import FeedbackAdd
-from models.feedback.feedback_response import FeedbackResponse
+from models.feedback.mappers.mappers import from_feedback_add_to_feedback
 
 
 class FeedbackRepository:
@@ -26,18 +25,3 @@ class FeedbackRepository:
         async with self.__db_session() as session:
             result = await session.execute(select(Feedback))
             return result.scalars()
-
-
-def from_feedback_add_to_feedback(feedback_add: FeedbackAdd) -> Feedback:
-    feedback = Feedback()
-    feedback.user_id = feedback_add.user_id
-    feedback.message = feedback_add.message
-    return feedback
-
-
-def from_feedback_to_feedback_response(feedback: Feedback) -> FeedbackResponse:
-    return FeedbackResponse(
-        id=str(feedback.id),
-        user_id=str(feedback.user_id),
-        message=feedback.message
-    )

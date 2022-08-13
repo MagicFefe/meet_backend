@@ -1,7 +1,7 @@
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
-from repositories.user_repository import UserRepository
 from fastapi.responses import JSONResponse
+from services.user.user_service import UserService
 from utils.authorization_utils import authorize_user
 from utils.request_utils import request_in_excluded
 
@@ -18,15 +18,15 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app,
-            repository: UserRepository
+            service: UserService
     ):
         super().__init__(app)
-        self.__repository: UserRepository = repository
+        self.__service: UserService = service
 
     async def dispatch(self, request, call_next):
         if not(request_in_excluded(request, EXCLUDED_REQUESTS)):
             try:
-                await authorize_user(request.headers, self.__repository)
+                await authorize_user(request.headers, self.__service)
             except KeyError:
                 return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED,
                                     content={"message": "unauthorized request"})

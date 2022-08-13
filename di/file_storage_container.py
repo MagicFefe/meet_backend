@@ -1,5 +1,4 @@
 from dependency_injector import containers, providers
-
 from config import USER_IMAGE_FILE_STORAGE_PATH, UPDATE_FILE_STORAGE_PATH, MEET_AUTHORS_FILE_STORAGE_PATH, \
     ANDROID_CLIENT_PLATFORM_NAME
 from files.file_manager import FileManager

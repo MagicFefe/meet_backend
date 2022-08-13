@@ -1,18 +1,20 @@
 from dependency_injector import containers, providers
 
-from repositories.feedback_repository import FeedbackRepository
-from repositories.meet_repository import MeetRepository
-from repositories.user_repository import UserRepository
+from repositories.feedback.feedback_repository import FeedbackRepository
+from repositories.meet.meet_repository import MeetRepository
+from repositories.user.user_repository import UserRepository
 
 
 class RepositoryContainer(containers.DeclarativeContainer):
     meet_db = providers.Dependency()
     db_session = providers.Dependency()
     user_image_file_manager = providers.Dependency()
+    meet_authors_id_storage = providers.Dependency()
 
     meet_repository = providers.Singleton(
         MeetRepository,
-        meet_db=meet_db
+        meet_db=meet_db,
+        meet_authors_id_storage=meet_authors_id_storage
     )
 
     user_repository = providers.Singleton(

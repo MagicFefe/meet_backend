@@ -1,16 +1,14 @@
 from typing import Optional, Callable, AsyncIterator
+from db.enitites.user.mappers.mappers import from_user_to_user_response_with_token
 from exceptions import UserAlreadyExistsError
 from sqlalchemy.ext.asyncio import AsyncSession
+from models.auth.mappers.mappers import from_sign_up_to_user
 from models.auth.sign_up import SignUp
 from models.user.user_update import UserUpdate
 from db.enitites.user.user import User
-from models.user.user_response import UserResponseWithToken, UserResponse
 from sqlalchemy.future import select
 from utils.password_utils import get_hashed_password
-from utils.jwt_utils import generate_jwt
 from uuid import UUID
-from base64 import b64encode
-from config import USER_IMAGE_PLACEHOLDER_PATH, ENCODING
 from sqlalchemy.sql.expression import update
 from files.file_manager import FileManager
 
@@ -18,8 +16,8 @@ from files.file_manager import FileManager
 class UserRepository:
     def __init__(
             self,
+            db_session: Callable[[], AsyncIterator[AsyncSession]],
             user_image_file_manager: FileManager,
-            db_session: Callable[[], AsyncIterator[AsyncSession]]
     ):
         self.__db_session = db_session
         self.__user_image_file_manager = user_image_file_manager
@@ -80,75 +78,3 @@ class UserRepository:
             await session.delete(user)
             await session.commit()
 
-
-def from_sign_up_to_user(
-        sign_up: SignUp,
-        user_image_file_manager: FileManager
-) -> User:
-    image_file_name = f"{sign_up.email}.txt"
-    user = User()
-    user.name = sign_up.name
-    user.surname = sign_up.surname
-    user.dob = sign_up.dob
-    user.gender = sign_up.gender
-    user.about = sign_up.about
-    user.email = sign_up.email
-    user.city = sign_up.city
-    user.country = sign_up.country
-    user.password = \
-        get_hashed_password(sign_up.password, sign_up.email)
-
-    if sign_up.image is None:
-        with open(USER_IMAGE_PLACEHOLDER_PATH, "rb") as image_file:
-            image = b64encode(image_file.read()).decode(ENCODING)
-        user.image_filename = user_image_file_manager.write_or_create_file(image_file_name, image)
-    else:
-        image = sign_up.image
-        user.image_filename = user_image_file_manager.write_or_create_file(image_file_name, image)
-    return user
-
-
-def from_user_to_user_response_with_token(
-        user: User,
-        user_image_file_manager: FileManager
-):
-    jwt = generate_jwt(
-        {
-            "name": user.name,
-            "surname": user.surname,
-            "email": user.email
-        }
-    )
-    user_response = UserResponseWithToken(
-        id=str(user.id),
-        name=user.name,
-        surname=user.surname,
-        about=user.about,
-        dob=user.dob,
-        gender=user.gender,
-        email=user.email,
-        country=user.country,
-        city=user.city,
-        jwt=str(jwt),
-        image=user_image_file_manager.read_file(user.image_filename)
-    )
-    return user_response
-
-
-def from_user_to_user_response(
-        user: User,
-        user_image_file_manager: FileManager
-):
-    user_response = UserResponse(
-        id=str(user.id),
-        name=user.name,
-        surname=user.surname,
-        about=user.about,
-        dob=user.dob,
-        gender=user.gender,
-        email=user.email,
-        country=user.country,
-        city=user.city,
-        image=user_image_file_manager.read_file(user.image_filename)
-    )
-    return user_response

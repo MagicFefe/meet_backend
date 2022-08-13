@@ -1,11 +1,9 @@
 from dependency_injector import containers, providers
-from config import MEET_AUTHORS_FILENAME
 from di.db_container import DbContainer
 from di.file_storage_container import FileStorageContainer
 from di.meet_container import MeetContainer
 from di.repository_container import RepositoryContainer
-from utils.saveable_list.list_saver import ListSaver
-from utils.saveable_list.saveable_list import SaveableList
+from di.service_container import ServiceContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
@@ -17,25 +15,22 @@ class ApplicationContainer(containers.DeclarativeContainer):
         FileStorageContainer
     )
 
-    list_saver = providers.Singleton(
-        ListSaver,
-        file_manager=file_storage_container.meet_authors_file_manager,
-        saved_list_filename=MEET_AUTHORS_FILENAME
-    )
-
-    meet_authors_id_storage = providers.Singleton(
-        SaveableList,
-        items=[],
-        list_saver=list_saver
-    )
-
     meet_container = providers.Container(
-        MeetContainer
+        MeetContainer,
+        meet_authors_file_manager=file_storage_container.meet_authors_file_manager
     )
 
     repository_container = providers.Container(
         RepositoryContainer,
         meet_db=db_container.meet_db,
         db_session=db_container.db.provided.get_session,
-        user_image_file_manager=file_storage_container.user_image_file_manager
+        user_image_file_manager=file_storage_container.user_image_file_manager,
+        meet_authors_id_storage=meet_container.meet_authors_id_storage
+    )
+
+    service_container = providers.Container(
+        ServiceContainer,
+        user_repository=repository_container.user_repository,
+        meet_repository=repository_container.meet_repository,
+        feedback_repository=repository_container.feedback_repository
     )

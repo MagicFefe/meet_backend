@@ -5,18 +5,18 @@ from starlette import status
 from di.application_container import ApplicationContainer
 from endpoints.meet.event_holder import EventHolder, MeetAdded, Event, MeetDeleted, MeetUpdated
 from exceptions import MeetPointAlreadyExistsError
+from files.file_manager import FileManager
+from models.meet.mappers.mappers import from_meet_response_to_meet_response_details
 from models.meet.meet import Meet
 from models.meet.meet_delete import MeetDelete
 from models.meet.meet_update import MeetUpdate
-from repositories.meet_repository import MeetRepository
+from services.meet.meet_service import MeetService
+from services.user.user_service import UserService
 from utils.observable_data.data_observer import DataObserver
 from starlette.websockets import WebSocketState
 from models.meet.meet_response_details import MeetResponseDetails
-from repositories.user_repository import UserRepository
 from uuid import UUID
 from fastapi import HTTPException
-from files.file_manager import FileManager
-from utils.saveable_list.saveable_list import SaveableList
 from request_checkers.ws_check_request import check_ws_header
 
 router = APIRouter(
@@ -31,7 +31,7 @@ router = APIRouter(
 @inject
 async def receive_meets(
         websocket: WebSocket,
-        meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
+        service: MeetService = Depends(Provide[ApplicationContainer.service_container.meet_service]),
         event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder])
 ):
     await websocket.accept()
@@ -39,7 +39,7 @@ async def receive_meets(
 
     async def handle_event(event: Event):
         if websocket.application_state == WebSocketState.CONNECTED:
-            meets = await meet_repository.get_meets()
+            meets = await service.get_meets()
             result = []
             for meet in meets:
                 result.append(meet.dict())
@@ -67,12 +67,11 @@ async def receive_meets(
 @inject
 async def create_meet(
         meet: Meet,
-        meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
-        event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder]),
-        meet_authors_id_storage: SaveableList = Depends(Provide[ApplicationContainer.meet_authors_id_storage])
+        service: MeetService = Depends(Provide[ApplicationContainer.service_container.meet_service]),
+        event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder])
 ):
     try:
-        await meet_repository.create_meet(meet_authors_id_storage.items, meet)
+        await service.create_meet(meet)
         await event_holder.update_event(MeetAdded())
     except MeetPointAlreadyExistsError:
         raise HTTPException(
@@ -89,32 +88,21 @@ async def create_meet(
 @inject
 async def get_meet_by_id(
         meet_id: str,
-        meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
-        user_repository: UserRepository = Depends(Provide[ApplicationContainer.repository_container.user_repository]),
+        meet_service: MeetService = Depends(Provide[ApplicationContainer.service_container.meet_service]),
+        user_service: UserService = Depends(Provide[ApplicationContainer.service_container.user_service]),
         image_file_manager: FileManager = Depends(
             Provide[ApplicationContainer.file_storage_container.user_image_file_manager]
         )
 ):
     try:
-        meet = await meet_repository.get_meet_by_id(meet_id)
+        meet = await meet_service.get_meet_by_id(meet_id)
     except Exception:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid id")
-    user = await user_repository.get_user_by_id(UUID(meet.author_id))
+    user = await user_service.get_user_by_id(UUID(meet.author_id))
     if user is None:
-        await meet_repository.delete_invalid_meet(meet_id)
+        await meet_service.delete_invalid_meet(meet_id)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="user does not exist")
-    meet_details = MeetResponseDetails(
-        id=meet.id,
-        author_id=meet.author_id,
-        author_name=user.name,
-        author_surname=user.surname,
-        author_image=image_file_manager.read_file(user.image_filename),
-        meet_name=meet.meet_name,
-        meet_description=meet.meet_description,
-        latitude=meet.latitude,
-        longitude=meet.longitude,
-        created_at=meet.created_at
-    )
+    meet_details = from_meet_response_to_meet_response_details(meet, user, image_file_manager)
     return meet_details
 
 
@@ -124,10 +112,10 @@ async def get_meet_by_id(
 @inject
 async def update_meet(
         meet_update: MeetUpdate,
-        meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
+        service: MeetService = Depends(Provide[ApplicationContainer.service_container.meet_service]),
         event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder])
 ):
-    await meet_repository.update_meet(meet_update)
+    await service.update_meet(meet_update)
     await event_holder.update_event(MeetUpdated())
 
 
@@ -137,9 +125,8 @@ async def update_meet(
 @inject
 async def delete_meet(
         meet_delete: MeetDelete,
-        meet_repository: MeetRepository = Depends(Provide[ApplicationContainer.repository_container.meet_repository]),
-        event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder]),
-        meet_authors_id_storage: SaveableList = Depends(Provide[ApplicationContainer.meet_authors_id_storage])
+        service: MeetService = Depends(Provide[ApplicationContainer.service_container.meet_service]),
+        event_holder: EventHolder = Depends(Provide[ApplicationContainer.meet_container.event_holder])
 ):
-    await meet_repository.delete_meet(meet_authors_id_storage.items, meet_delete)
+    await service.delete_meet(meet_delete)
     await event_holder.update_event(MeetDeleted())

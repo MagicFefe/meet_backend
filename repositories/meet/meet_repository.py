@@ -1,23 +1,25 @@
 from typing import Any
 from aioredis import Redis
 from exceptions import MeetPointAlreadyExistsError
+from models.meet.mappers.mappers import from_meet_to_meet_db
 from models.meet.meet import Meet
-from uuid import uuid4
-from models.meet.meet_db import MeetDB
 from models.meet.meet_delete import MeetDelete
 from models.meet.meet_response import MeetResponse
-from datetime import datetime
 from models.meet.meet_update import MeetUpdate
+from utils.saveable_list.saveable_list import SaveableList
 
 
 class MeetRepository:
     def __init__(
             self,
-            meet_db: Redis
+            meet_db: Redis,
+            meet_authors_id_storage: SaveableList
     ):
         self.__meet_db = meet_db
+        self.__meet_authors_id_storage = meet_authors_id_storage
 
-    async def create_meet(self, meet_author_list: list[str], meet: Meet):
+    async def create_meet(self, meet: Meet):
+        meet_author_list: list[str] = self.__meet_authors_id_storage.items
         if meet.author_id in meet_author_list:
             raise MeetPointAlreadyExistsError()
         else:
@@ -47,7 +49,8 @@ class MeetRepository:
         async with self.__meet_db.client() as connection:
             await connection.hset(meet.id, mapping=meet.dict())
 
-    async def delete_meet(self, meet_author_list: list[str], meet: MeetDelete):
+    async def delete_meet(self, meet: MeetDelete):
+        meet_author_list: list[str] = self.__meet_authors_id_storage.items
         async with self.__meet_db.client() as connection:
             await connection.delete(meet.id)
         if meet.author_id in meet_author_list:
@@ -58,33 +61,11 @@ class MeetRepository:
             await connection.delete(meet_id)
 
 
-def from_meet_to_meet_db(meet: Meet) -> MeetDB:
-    meet_id = str(uuid4())
-    date = str(datetime.now())
-    meet_db = MeetDB(
-        id=meet_id,
-        meet_description=meet.meet_description,
-        meet_name=meet.meet_name,
-        author_name=meet.author_name,
-        author_surname=meet.author_surname,
-        author_id=meet.author_id,
-        latitude=meet.latitude,
-        longitude=meet.longitude,
-        created_at=date
-    )
-    return meet_db
-
-
-def from_meet_db_to_meet_response(meet_db: MeetDB) -> MeetResponse:
-    return MeetResponse(
-        id=meet_db.id,
-        author_id=meet_db.author_id,
-        meet_name=meet_db.meet_name,
-        meet_description=meet_db.meet_description,
-        latitude=meet_db.latitude,
-        longitude=meet_db.longitude,
-        created_at=meet_db.created_at
-    )
+def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
+    meet: dict[str, str] = {}
+    for id, value in meet_bytes.items():
+        meet[id.decode("utf-8")] = value.decode("utf-8")
+    return meet
 
 
 def from_dict_to_meet_response(meet_dict: dict[str, str]) -> MeetResponse:
@@ -97,10 +78,3 @@ def from_dict_to_meet_response(meet_dict: dict[str, str]) -> MeetResponse:
         longitude=meet_dict["longitude"],
         created_at=meet_dict["created_at"]
     )
-
-
-def decode_meet_from_bytes(meet_bytes: Any) -> dict[str, str]:
-    meet: dict[str, str] = {}
-    for id, value in meet_bytes.items():
-        meet[id.decode("utf-8")] = value.decode("utf-8")
-    return meet
