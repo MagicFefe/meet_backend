@@ -50,7 +50,7 @@ async def sign_up(
     except UserAlreadyExistsError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="user with this email already exists")
     created_user_db = await service.get_user_by_email(sign_up_model.email)
-    created_user = from_user_to_user_response_with_token(created_user_db, user_image_file_manager)
+    created_user = await from_user_to_user_response_with_token(created_user_db, user_image_file_manager)
     return created_user
 
 
@@ -79,7 +79,7 @@ async def sign_in(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist")
     hashed_password = get_hashed_password(sign_in_model.password, sign_in_model.email)
     if user.password == hashed_password:
-        existing_user = from_user_to_user_response_with_token(user, user_image_file_manager)
+        existing_user = await from_user_to_user_response_with_token(user, user_image_file_manager)
         return existing_user
     else:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="incorrect password")

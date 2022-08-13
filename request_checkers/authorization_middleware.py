@@ -10,7 +10,8 @@ EXCLUDED_REQUESTS: dict[str, list] = {
     "/openapi.json": ["GET"],
     "/sign_up": ["POST"],
     "/sign_in": ["POST"],
-    "/feedback": ["GET"]
+    "/feedback": ["GET"],
+    "/update": ["POST"]
 }
 
 

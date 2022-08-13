@@ -6,7 +6,7 @@ from models.auth.sign_up import SignUp
 from utils.password_utils import get_hashed_password
 
 
-def from_sign_up_to_user(
+async def from_sign_up_to_user(
         sign_up: SignUp,
         user_image_file_manager: FileManager
 ) -> User:
@@ -24,8 +24,8 @@ def from_sign_up_to_user(
     if sign_up.image is None:
         with open(USER_IMAGE_PLACEHOLDER_PATH, "rb") as image_file:
             image = b64encode(image_file.read()).decode(ENCODING)
-        user.image_filename = user_image_file_manager.write_or_create_file(image_file_name, image)
+        user.image_filename = await user_image_file_manager.write_or_create_file(image_file_name, image)
     else:
         image = sign_up.image
-        user.image_filename = user_image_file_manager.write_or_create_file(image_file_name, image)
+        user.image_filename = await user_image_file_manager.write_or_create_file(image_file_name, image)
     return user

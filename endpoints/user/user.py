@@ -49,7 +49,7 @@ async def get_user_by_id(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="bad id")
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user with this id does not exists")
-    result = from_user_to_user_response(user, user_image_file_manager)
+    result = await from_user_to_user_response(user, user_image_file_manager)
     return result
 
 

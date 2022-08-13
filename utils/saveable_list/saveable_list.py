@@ -11,8 +11,8 @@ class SaveableList:
         self.items = items
         self.__list_saver = list_saver
 
-    def on_save(self):
-        self.__list_saver.save_list(self.items)
+    async def on_save(self):
+        await self.__list_saver.save_list(self.items)
 
-    def on_restore(self):
-        self.items = self.__list_saver.get_list()
+    async def on_restore(self):
+        self.items = await self.__list_saver.get_list()

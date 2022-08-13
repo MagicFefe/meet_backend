@@ -1,70 +1,41 @@
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, HTTPException, Depends
-from starlette import status
+from fastapi import APIRouter, Depends
 from starlette.requests import Request
 from fastapi.responses import FileResponse
 from request_checkers.admin_check_route import AdminRightsRoute
 from di.application_container import ApplicationContainer
-from files.file_manager import FileManager
-from config import SUPPORTED_UPDATE_FILE_CONTENT_TYPES, SUPPORTED_PLATFORMS, MIN_UPDATE_FILE_SIZE, \
-    ANDROID_CLIENT_PLATFORM_NAME, FILE_MEDIA_TYPE_ANDROID, ANDROID_UPDATE_FILENAME, \
-    CURRENT_VERSION_UPDATE_FILE_FILENAME
-from utils.version_utils import first_version_is_lower
+from config import ANDROID_CLIENT_PLATFORM_NAME, FILE_MEDIA_TYPE_ANDROID
+from request_checkers.update_endpoint_request_check import check_client_platform, check_update_file_version, \
+    check_content_type, check_update_file_size
+from services.update.update_service import UpdateService
 
 router = APIRouter(
     prefix="/api/update",
     tags=["update"],
-    route_class=AdminRightsRoute
+    route_class=AdminRightsRoute,
+    dependencies=[
+        Depends(check_client_platform)
+    ]
 )
 
 
 @router.post(
     path="/{client_platform}",
+    dependencies=[
+        Depends(check_content_type), Depends(check_update_file_size)
+    ]
 )
 @inject
 async def upload_update(
         request: Request,
-        update_file_file_manager_android: FileManager = Depends(
-            Provide[ApplicationContainer.file_storage_container.update_file_file_manager_android]
-        )
+        update_service: UpdateService = Depends(Provide[ApplicationContainer.service_container.update_service])
 ):
-    client_platform = request.path_params.get("client_platform", None)
-    if (client_platform is None) or not (client_platform in SUPPORTED_PLATFORMS):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported client platform")
-    content_type = request.headers.get("content-type", None)
-    if (content_type is None) or not (content_type in SUPPORTED_UPDATE_FILE_CONTENT_TYPES):
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="unsupported update file content type"
-        )
+    update_file_version = request.headers.get("update-file-version")
+    await check_update_file_version(update_file_version)
     update_file_bytes = await request.body()
-    if len(update_file_bytes) < MIN_UPDATE_FILE_SIZE:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="file is too small")
+    client_platform = request.path_params.get("client_platform")
     if client_platform == ANDROID_CLIENT_PLATFORM_NAME:
-        update_file_version: str | None = request.headers.get("update-file-version", None)
-        if not (update_file_version is None):
-            try:
-                current_version = update_file_file_manager_android.read_file(CURRENT_VERSION_UPDATE_FILE_FILENAME)
-                if first_version_is_lower(current_version, update_file_version):
-                    update_file_file_manager_android.rewrite_file_bytes(ANDROID_UPDATE_FILENAME, update_file_bytes)
-                    update_file_file_manager_android.rewrite_file(CURRENT_VERSION_UPDATE_FILE_FILENAME,
-                                                                  update_file_version)
-                    return status.HTTP_200_OK
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail="uploading version is older than version on server"
-                    )
-            except FileNotFoundError:
-                update_file_file_manager_android.write_or_create_file_bytes(ANDROID_UPDATE_FILENAME, update_file_bytes)
-                update_file_file_manager_android.write_or_create_file(CURRENT_VERSION_UPDATE_FILE_FILENAME,
-                                                                      update_file_version)
-                return status.HTTP_200_OK
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="bad update file version"
-            )
+        await update_service.upload_update_file_android(update_file_bytes, update_file_version)
 
 
 @router.get(
@@ -74,13 +45,10 @@ async def upload_update(
 @inject
 async def receive_update(
         client_platform: str,
-        update_file_file_manger_android: FileManager =
-        Depends(Provide[ApplicationContainer.file_storage_container.update_file_file_manager_android])
+        service: UpdateService = Depends(Provide[ApplicationContainer.service_container.update_service])
 ):
-    if (client_platform is None) or not (client_platform in SUPPORTED_PLATFORMS):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported client platform")
     if client_platform == ANDROID_CLIENT_PLATFORM_NAME:
-        file_path = update_file_file_manger_android.full_storage_path + ANDROID_UPDATE_FILENAME
+        file_path = await service.get_update_file_path_android()
         return FileResponse(file_path, media_type=FILE_MEDIA_TYPE_ANDROID)
 
 
@@ -90,10 +58,8 @@ async def receive_update(
 @inject
 async def get_current_update_version(
         client_platform: str,
-        update_file_file_manager_android: FileManager =
-        Depends(Provide[ApplicationContainer.file_storage_container.update_file_file_manager_android])
+        service: UpdateService = Depends(Provide[ApplicationContainer.service_container.update_service])
 ):
-    if (client_platform is None) or not (client_platform in SUPPORTED_PLATFORMS):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported client platform")
     if client_platform == ANDROID_CLIENT_PLATFORM_NAME:
-        return update_file_file_manager_android.read_file(CURRENT_VERSION_UPDATE_FILE_FILENAME)
+        current_version = await service.get_current_version_android()
+        return current_version

@@ -37,7 +37,7 @@ class UserRepository:
             user_db = await self.get_user_by_email(new_user.email)
             user_not_exists: bool = user_db is None
             if user_not_exists:
-                user_db = from_sign_up_to_user(new_user, self.__user_image_file_manager)
+                user_db = await from_sign_up_to_user(new_user, self.__user_image_file_manager)
                 session.add(user_db)
                 await session.commit()
             else:
@@ -49,9 +49,12 @@ class UserRepository:
             old_user_email: str
     ):
         old_user_image_filename = f"{old_user_email}.txt"
-        self.__user_image_file_manager.delete_file(old_user_image_filename)
+        await self.__user_image_file_manager.delete_file(old_user_image_filename)
         new_user_image_filename = f"{user.email}.txt"
-        new_image_filename = self.__user_image_file_manager.write_or_create_file(new_user_image_filename, user.image)
+        new_image_filename = await self.__user_image_file_manager.write_or_create_file(
+            new_user_image_filename,
+            user.image
+        )
         async with self.__db_session() as session:
             await session.execute(
                 update(User).where(User.id == UUID(user.id)).values(
@@ -69,7 +72,7 @@ class UserRepository:
             )
             await session.commit()
             new_user_db = await self.get_user_by_id(UUID(user.id))
-            new_user = from_user_to_user_response_with_token(new_user_db, self.__user_image_file_manager)
+            new_user = await from_user_to_user_response_with_token(new_user_db, self.__user_image_file_manager)
             return new_user
 
     async def delete_user(self, user_id: UUID):

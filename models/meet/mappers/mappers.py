@@ -8,17 +8,18 @@ from models.meet.meet_response import MeetResponse
 from models.meet.meet_response_details import MeetResponseDetails
 
 
-def from_meet_response_to_meet_response_details(
+async def from_meet_response_to_meet_response_details(
         meet: MeetResponse,
         user: User,
         image_file_manager: FileManager
 ) -> MeetResponseDetails:
+    user_image = await image_file_manager.read_file(user.image_filename)
     return MeetResponseDetails(
         id=meet.id,
         author_id=meet.author_id,
         author_name=user.name,
         author_surname=user.surname,
-        author_image=image_file_manager.read_file(user.image_filename),
+        author_image=user_image,
         meet_name=meet.meet_name,
         meet_description=meet.meet_description,
         latitude=meet.latitude,

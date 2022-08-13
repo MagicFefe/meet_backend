@@ -25,12 +25,14 @@ class ApplicationContainer(containers.DeclarativeContainer):
         meet_db=db_container.meet_db,
         db_session=db_container.db.provided.get_session,
         user_image_file_manager=file_storage_container.user_image_file_manager,
-        meet_authors_id_storage=meet_container.meet_authors_id_storage
+        meet_authors_id_storage=meet_container.meet_authors_id_storage,
+        update_file_file_manager_android=file_storage_container.update_file_file_manager_android
     )
 
     service_container = providers.Container(
         ServiceContainer,
         user_repository=repository_container.user_repository,
         meet_repository=repository_container.meet_repository,
-        feedback_repository=repository_container.feedback_repository
+        feedback_repository=repository_container.feedback_repository,
+        update_repository=repository_container.update_repository
     )

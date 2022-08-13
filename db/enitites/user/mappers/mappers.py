@@ -4,7 +4,7 @@ from models.user.user_response import UserResponse, UserResponseWithToken
 from utils.jwt_utils import generate_jwt
 
 
-def from_user_to_user_response_with_token(
+async def from_user_to_user_response_with_token(
         user: User,
         user_image_file_manager: FileManager
 ):
@@ -15,6 +15,7 @@ def from_user_to_user_response_with_token(
             "email": user.email
         }
     )
+    user_image = await user_image_file_manager.read_file(user.image_filename)
     user_response = UserResponseWithToken(
         id=str(user.id),
         name=user.name,
@@ -26,15 +27,16 @@ def from_user_to_user_response_with_token(
         country=user.country,
         city=user.city,
         jwt=str(jwt),
-        image=user_image_file_manager.read_file(user.image_filename)
+        image=user_image
     )
     return user_response
 
 
-def from_user_to_user_response(
+async def from_user_to_user_response(
         user: User,
         user_image_file_manager: FileManager
 ):
+    user_image = await user_image_file_manager.read_file(user.image_filename)
     user_response = UserResponse(
         id=str(user.id),
         name=user.name,
@@ -45,6 +47,6 @@ def from_user_to_user_response(
         email=user.email,
         country=user.country,
         city=user.city,
-        image=user_image_file_manager.read_file(user.image_filename)
+        image=user_image
     )
     return user_response

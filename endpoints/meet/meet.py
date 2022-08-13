@@ -102,7 +102,7 @@ async def get_meet_by_id(
     if user is None:
         await meet_service.delete_invalid_meet(meet_id)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="user does not exist")
-    meet_details = from_meet_response_to_meet_response_details(meet, user, image_file_manager)
+    meet_details = await from_meet_response_to_meet_response_details(meet, user, image_file_manager)
     return meet_details
 
 

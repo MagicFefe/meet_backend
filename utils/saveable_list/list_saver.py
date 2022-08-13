@@ -13,23 +13,22 @@ class ListSaver:
         self.__file_manager = file_manager
         self.__saved_list_filename = saved_list_filename
 
-    def save_list(self, items: list[str]):
+    async def save_list(self, items: list[str]):
+        meet_authors = ""
         if len(items) > 0:
             reducer: Callable[[str, str], str] = lambda initial, item: initial + f"{item} "
             meet_authors = reduce(reducer, items)
-            if self.__file_manager.file_exists(self.__saved_list_filename):
-                self.__file_manager.rewrite_file(self.__saved_list_filename, meet_authors)
-            else:
-                self.__file_manager.write_or_create_file(self.__saved_list_filename, meet_authors)
+        file_exists = await self.__file_manager.file_exists(self.__saved_list_filename)
+        if file_exists:
+            await self.__file_manager.rewrite_file(self.__saved_list_filename, meet_authors)
         else:
-            if self.__file_manager.file_exists(self.__saved_list_filename):
-                self.__file_manager.rewrite_file(self.__saved_list_filename, "")
-            else:
-                self.__file_manager.write_or_create_file(self.__saved_list_filename, "")
+            await self.__file_manager.write_or_create_file(self.__saved_list_filename, meet_authors)
 
-    def get_list(self) -> list[str]:
-        if self.__file_manager.file_exists(self.__saved_list_filename):
+    async def get_list(self) -> list[str]:
+        file_exists = await self.__file_manager.file_exists(self.__saved_list_filename)
+        if file_exists:
             predicate: Callable[[str], bool] = lambda item: len(item) > 0
-            return list(filter(predicate, self.__file_manager.read_file(self.__saved_list_filename).split(" ")))
+            author_ids = await self.__file_manager.read_file(self.__saved_list_filename)
+            return list(filter(predicate, author_ids.split(" ")))
         else:
             return []
