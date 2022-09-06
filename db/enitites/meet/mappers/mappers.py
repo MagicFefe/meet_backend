@@ -1,8 +1,8 @@
-from db.enitites.meet.meet_db import MeetDB
+from db.enitites.meet.meet import Meet
 from models.meet.meet_response import MeetResponse
 
 
-def from_meet_db_to_meet_response(meet_db: MeetDB) -> MeetResponse:
+def from_meet_db_to_meet_response(meet_db: Meet) -> MeetResponse:
     return MeetResponse(
         id=meet_db.id,
         author_id=meet_db.author_id,

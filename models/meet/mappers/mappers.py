@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
-from db.enitites.meet.meet_db import MeetDB
+from db.enitites.meet.meet import Meet as MeetDB
 from db.enitites.user.user import User
 from files.file_manager import FileManager
 from models.meet.meet import Meet

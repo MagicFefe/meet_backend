@@ -1,7 +1,7 @@
 from db.enitites.user.user import User
 from files.file_manager import FileManager
-from models.user.user_response import UserResponse, UserResponseWithToken
 from utils.jwt_utils import generate_jwt
+from models.user.user_response import UserResponse, UserResponseWithToken
 
 
 async def from_user_to_user_response_with_token(
@@ -16,6 +16,7 @@ async def from_user_to_user_response_with_token(
         }
     )
     user_image = await user_image_file_manager.read_file(user.image_filename)
+    chats = [chat.id for chat in user.chats]
     user_response = UserResponseWithToken(
         id=str(user.id),
         name=user.name,
@@ -27,7 +28,9 @@ async def from_user_to_user_response_with_token(
         country=user.country,
         city=user.city,
         jwt=str(jwt),
-        image=user_image
+        image=user_image,
+        deleted=user.deleted,
+        chats=chats
     )
     return user_response
 
@@ -37,6 +40,7 @@ async def from_user_to_user_response(
         user_image_file_manager: FileManager
 ):
     user_image = await user_image_file_manager.read_file(user.image_filename)
+    chats = [chat.id for chat in user.chats]
     user_response = UserResponse(
         id=str(user.id),
         name=user.name,
@@ -47,6 +51,8 @@ async def from_user_to_user_response(
         email=user.email,
         country=user.country,
         city=user.city,
-        image=user_image
+        image=user_image,
+        deleted=user.deleted,
+        chats=chats
     )
     return user_response

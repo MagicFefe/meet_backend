@@ -1,7 +1,9 @@
 from dependency_injector import containers, providers
 
+from repositories.chat.chat_repository import ChatRepository
 from repositories.feedback.feedback_repository import FeedbackRepository
 from repositories.meet.meet_repository import MeetRepository
+from repositories.message.message_repository import MessageRepository
 from repositories.update.update_repository import UpdateRepository
 from repositories.user.user_repository import UserRepository
 
@@ -33,4 +35,15 @@ class RepositoryContainer(containers.DeclarativeContainer):
     update_repository = providers.Singleton(
         UpdateRepository,
         update_file_file_manager_android=update_file_file_manager_android
+    )
+
+    chat_repository = providers.Singleton(
+        ChatRepository,
+        db_session=db_session,
+        user_repository=user_repository
+    )
+
+    message_repository = providers.Singleton(
+        MessageRepository,
+        db_session=db_session
     )

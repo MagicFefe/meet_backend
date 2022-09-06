@@ -1,9 +1,12 @@
+from logging.config import dictConfig
 from sys import modules
 from dependency_injector.wiring import Provide, inject
 from fastapi import FastAPI
 from db.database import Database
 from di.application_container import ApplicationContainer
+from endpoints.chat import chat
 from endpoints.feedback import feedback
+from endpoints.message import message
 from endpoints.update import update
 from endpoints.user import user
 from endpoints.meet import meet
@@ -22,6 +25,8 @@ app.include_router(user.router)
 app.include_router(meet.router)
 app.include_router(update.router)
 app.include_router(feedback.router)
+app.include_router(chat.router)
+app.include_router(message.router)
 
 
 @app.on_event("startup")

@@ -4,14 +4,8 @@ from fastapi.openapi.models import Response
 from fastapi.routing import APIRoute
 from starlette import status
 from starlette.requests import Request
-
-from config import ADMIN_SECRET
+from config import ADMIN_SECRET, ADMIN_REQUESTS
 from utils.request_utils import request_in_excluded
-
-ADMIN_REQUESTS = {
-    "/feedback/all": ["GET"],
-    "/update": ["POST"]
-}
 
 
 class AdminRightsRoute(APIRoute):

@@ -8,5 +8,5 @@ class Feedback(Base):
     __tablename__ = "feedbacks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"))
     message = Column(String, nullable=False)

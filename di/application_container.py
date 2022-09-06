@@ -1,4 +1,5 @@
 from dependency_injector import containers, providers
+from di.chat_container import ChatContainer
 from di.db_container import DbContainer
 from di.file_storage_container import FileStorageContainer
 from di.meet_container import MeetContainer
@@ -20,6 +21,10 @@ class ApplicationContainer(containers.DeclarativeContainer):
         meet_authors_file_manager=file_storage_container.meet_authors_file_manager
     )
 
+    chat_container = providers.Container(
+        ChatContainer
+    )
+
     repository_container = providers.Container(
         RepositoryContainer,
         meet_db=db_container.meet_db,
@@ -34,5 +39,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
         user_repository=repository_container.user_repository,
         meet_repository=repository_container.meet_repository,
         feedback_repository=repository_container.feedback_repository,
-        update_repository=repository_container.update_repository
+        update_repository=repository_container.update_repository,
+        chat_repository=repository_container.chat_repository,
+        message_repository=repository_container.message_repository
     )

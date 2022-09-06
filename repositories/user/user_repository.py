@@ -32,6 +32,11 @@ class UserRepository:
             result = await session.execute(select(User).where(User.id == user_id))
             return result.scalar_one_or_none()
 
+    async def get_users_by_ids(self, user_ids: list[UUID]) -> list[User] | None:
+        async with self.__db_session() as session:
+            users = await session.execute(select(User).where(User.id.in_(user_ids)))
+            return users.scalars()
+
     async def create_user(self, new_user: SignUp):
         async with self.__db_session() as session:
             user_db = await self.get_user_by_email(new_user.email)
@@ -75,9 +80,9 @@ class UserRepository:
             new_user = await from_user_to_user_response_with_token(new_user_db, self.__user_image_file_manager)
             return new_user
 
+    # TODO: Implement soft and hard deletion
     async def delete_user(self, user_id: UUID):
         user = await self.get_user_by_id(user_id)
         async with self.__db_session() as session:
             await session.delete(user)
             await session.commit()
-

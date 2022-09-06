@@ -12,6 +12,8 @@ class UserResponse(BaseModel):
     country: str
     city: str
     image: str
+    deleted: bool
+    chats: list
 
 
 class UserResponseWithToken(UserResponse):

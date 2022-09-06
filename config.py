@@ -5,9 +5,9 @@ DB_USER_PASSWORD = getenv("POSTGRES_PASSWORD", "12345678")
 IP_ADDRESS = "127.0.0.1"
 PORT = "5432"
 DB_NAME = getenv("POSTGRES_DB", "main")
-DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@postgres/{DB_NAME}"
+DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_USER_PASSWORD}@127.0.0.1:5432/{DB_NAME}"
 MEET_DB_NAME = "1"
-MEET_DB_URL = f"redis://redis/{MEET_DB_NAME}"
+MEET_DB_URL = f"redis://127.0.0.1:6379/{MEET_DB_NAME}"
 JWT_ALG = "HS256"
 JWT_NAME = "JWT"
 JWK_KEY = "ytXtB53Ku62pZdC-qBH3mJwgsxQThvBp4wfNHCUyS4HkUKA8Q9NEEzxy7Xl9oztmTpRheoG2008VEocBu7kqJw"
@@ -35,3 +35,17 @@ MIN_USER_IMAGE_WIDTH_PX = 100
 MIN_USER_IMAGE_HEIGHT_PX = 100
 MAX_USER_IMAGE_WIDTH_PX = 200
 MAX_USER_IMAGE_HEIGHT_PX = 200
+DATETIME_PATTERN = "%Y-%m-%d %H:%M:%S.%f"
+NON_AUTH_REQUESTS: dict[str, list] = {
+    "/docs": ["GET"],
+    "/openapi.json": ["GET"],
+    "/sign_up": ["POST"],
+    "/sign_in": ["POST"],
+    "/feedback": ["GET"],
+    "/update": ["POST"],
+    "/": ["GET", "POST", "DELETE", "PUT"]
+}
+ADMIN_REQUESTS = {
+    "/feedback/all": ["GET"],
+    "/update": ["POST"]
+}

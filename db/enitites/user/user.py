@@ -1,7 +1,10 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Boolean
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from db.enitites.base_class import Base
 from uuid import uuid4
+from db.enitites.user_chat_assoc.user_chat_assoc import UserChatAssociation
+from utils.import_resolvers import resolve_chat_model
 
 
 class User(Base):
@@ -18,3 +21,12 @@ class User(Base):
     city = Column(String, nullable=False)
     password = Column(String, nullable=False)
     image_filename = Column(String, nullable=False)
+    deleted = Column(Boolean, nullable=False, default=False)
+    chats = relationship(
+        resolve_chat_model(),
+        back_populates="users",
+        secondary="user_chat_association",
+        primaryjoin=lambda: User.id == UserChatAssociation.user_id,
+        lazy="subquery",
+        cascade="all, delete"
+    )

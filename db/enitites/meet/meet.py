@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class MeetDB(BaseModel):
+class Meet(BaseModel):
     id: str
     author_id: str
     meet_name: str

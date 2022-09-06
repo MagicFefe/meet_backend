@@ -18,4 +18,6 @@ async def authorize_user(
     email: str = data["email"]
     user_db = await user_service.get_user_by_email(email)
     if user_db is None:
-        return UserDoesNotExistError()
+        raise UserDoesNotExistError()
+    else:
+        return user_db
